@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useSyncExternalStore } from "react";
 
 export type StoredUser = { name: string } | null;
 
@@ -14,6 +14,10 @@ const UserContext = createContext<UserContextValue | null>(null);
 
 const STORAGE_KEY = "av_user";
 
+const listeners = new Set<() => void>();
+let cachedUser: StoredUser = null;
+let cacheInitialized = false;
+
 function readStoredUser(): StoredUser {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
@@ -22,30 +26,41 @@ function readStoredUser(): StoredUser {
   }
 }
 
-export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<StoredUser>(null);
+function getSnapshot(): StoredUser {
+  if (!cacheInitialized) {
+    cachedUser = readStoredUser();
+    cacheInitialized = true;
+  }
+  return cachedUser;
+}
 
-  useEffect(() => {
-    setUser(readStoredUser());
-  }, []);
+function getServerSnapshot(): StoredUser {
+  return null;
+}
 
-  const login = (nextUser: StoredUser) => {
-    setUser(nextUser);
-    try {
-      if (nextUser) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
-      } else {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    } catch {}
-  };
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
 
-  const logout = () => {
-    setUser(null);
-    try {
+function setStoredUser(user: StoredUser) {
+  cachedUser = user;
+  cacheInitialized = true;
+  try {
+    if (user) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+    } else {
       localStorage.removeItem(STORAGE_KEY);
-    } catch {}
-  };
+    }
+  } catch {}
+  listeners.forEach((listener) => listener());
+}
+
+export function UserProvider({ children }: { children: React.ReactNode }) {
+  const user = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  const login = (nextUser: StoredUser) => setStoredUser(nextUser);
+  const logout = () => setStoredUser(null);
 
   return (
     <UserContext.Provider value={{ user, login, logout }}>
