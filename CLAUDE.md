@@ -8,6 +8,10 @@ Este archivo ofrece guía a Claude Code (claude.ai/code) al trabajar con código
 
 Arcade Vault es una plataforma para jugar online y competir por la mayor cantidad de puntos (ver README.md). El código es actualmente el scaffold recién generado por `create-next-app` — todavía no existe lógica de juego, rutas ni componentes propios más allá de la plantilla por defecto (`app/layout.tsx`, `app/page.tsx`).
 
+## Skills
+
+Usa siempre /frontend-design para diseñar interfaces de usuario.
+
 ## Stack tecnológico
 
 - Next.js 16.2.12 (App Router, directorio `app/`)
