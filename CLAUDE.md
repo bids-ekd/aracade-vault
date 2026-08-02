@@ -16,13 +16,6 @@ Arcade Vault es una plataforma para jugar online y competir por la mayor cantida
 - Tailwind CSS v4, cargado vía `@tailwindcss/postcss` y configurado con `@theme inline` en `app/globals.css` (sin `tailwind.config.*` separado)
 - ESLint 9 con configuración flat (`eslint.config.mjs`) usando los rule sets `core-web-vitals` y `typescript` de `eslint-config-next`
 
-## Comandos
-
-- `npm run dev` — inicia el servidor de desarrollo
-- `npm run build` — build de producción
-- `npm run start` — ejecuta el build de producción
-- `npm run lint` — lint con ESLint
-
 Todavía no hay un test runner configurado.
 
 ## Crítico: este no es el Next.js que conoces

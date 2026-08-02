@@ -14,3 +14,10 @@ https://github.com/Klerith/fernando-skills
 ```bash
 npx skills@latest add Klerith/fernando-skills
 ```
+
+## Comandos
+
+- `npm run dev` — inicia el servidor de desarrollo
+- `npm run build` — build de producción
+- `npm run start` — ejecuta el build de producción
+- `npm run lint` — lint con ESLint
