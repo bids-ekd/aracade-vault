@@ -8,6 +8,10 @@ Este archivo ofrece guía a Claude Code (claude.ai/code) al trabajar con código
 
 Arcade Vault es una plataforma para jugar online y competir por la mayor cantidad de puntos (ver README.md). El código es actualmente el scaffold recién generado por `create-next-app` — todavía no existe lógica de juego, rutas ni componentes propios más allá de la plantilla por defecto (`app/layout.tsx`, `app/page.tsx`).
 
+## Skills
+
+Usa siempre /frontend-design para diseñar interfaces de usuario.
+
 ## Stack tecnológico
 
 - Next.js 16.2.12 (App Router, directorio `app/`)
@@ -15,13 +19,6 @@ Arcade Vault es una plataforma para jugar online y competir por la mayor cantida
 - TypeScript (modo strict, alias de rutas `@/*` → raíz del repo)
 - Tailwind CSS v4, cargado vía `@tailwindcss/postcss` y configurado con `@theme inline` en `app/globals.css` (sin `tailwind.config.*` separado)
 - ESLint 9 con configuración flat (`eslint.config.mjs`) usando los rule sets `core-web-vitals` y `typescript` de `eslint-config-next`
-
-## Comandos
-
-- `npm run dev` — inicia el servidor de desarrollo
-- `npm run build` — build de producción
-- `npm run start` — ejecuta el build de producción
-- `npm run lint` — lint con ESLint
 
 Todavía no hay un test runner configurado.
 
