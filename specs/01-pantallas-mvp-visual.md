@@ -1,6 +1,6 @@
 # SPEC 01 — Pantallas visuales del MVP de Arcade Vault
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** Ninguna (primer spec del proyecto)
 > **Date:** 2026-08-02
 > **Objective:** Implementar la parte visual de las 5 pantallas de Arcade Vault (Biblioteca, Detalle de juego, Reproductor, Acceso y Salón de la Fama) migrando `references/templates/` a rutas reales de Next.js App Router, sin implementar ningún juego jugable real.
@@ -86,26 +86,26 @@ Estado de ruta y sesión:
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] `/` muestra el hero, el buscador y el grid de las 8 tarjetas de juego de `GAMES`.
-- [ ] Escribir en el buscador de `/` filtra las tarjetas por título en tiempo real.
-- [ ] Seleccionar una categoría en los chips de `/` filtra las tarjetas por esa categoría.
-- [ ] Buscar un término sin coincidencias muestra el estado vacío "NO HAY RESULTADOS".
-- [ ] Hacer clic en una tarjeta o en su botón "JUGAR" navega a `/juego/[id]` con el juego correcto.
-- [ ] `/juego/[id]` muestra portada, descripción, stat strip y una tabla de 10 puntuaciones mock.
-- [ ] `/juego/id-inexistente` responde con la página 404 de Next.js.
-- [ ] El botón "JUGAR AHORA" en `/juego/[id]` navega a `/juego/[id]/jugar`.
-- [ ] En `/juego/[id]/jugar`, la puntuación del HUD aumenta automáticamente cada ~220ms mientras no está en pausa ni terminó la partida.
-- [ ] Pulsar "PAUSA" detiene el incremento de puntuación y muestra el overlay "EN PAUSA"; pulsar "REANUDAR" lo reactiva.
-- [ ] Pulsar "FIN" abre el modal de fin de partida con la puntuación final congelada.
-- [ ] Guardar la puntuación en el modal la agrega al array `av_scores` en `localStorage` y muestra el toast "PUNTUACIÓN GUARDADA".
-- [ ] En `/auth`, enviar el formulario de "Iniciar sesión" guarda el usuario en `localStorage["av_user"]`, actualiza el Nav en toda la app y navega a `/`.
-- [ ] "JUGAR COMO INVITADO" en `/auth` navega a `/` sin crear sesión.
-- [ ] Con sesión iniciada, el Nav muestra el nombre de usuario en vez del botón "Iniciar Sesión"; cerrar sesión desde el Nav borra `av_user` y vuelve a mostrar el botón.
-- [ ] `/salon` muestra tabs por cada juego de `GAMES`, un podio con los 3 primeros puestos y una tabla con el resto de puntuaciones mock.
-- [ ] Con sesión iniciada, `/salon` muestra la fila "tu mejor marca" al final de la tabla; sin sesión, esa fila no aparece.
-- [ ] El panel de navegación móvil (hamburguesa) abre y cierra correctamente en viewport angosto.
-- [ ] Todas las clases visuales usadas (`.card`, `.av-nav`, `.leaderboard`, `.podium`, `.modal`, etc.) provienen de `app/globals.css` ya migrado; no hay estilos duplicados en CSS-in-JS.
+- [x] `npm run build` y `npm run lint` terminan sin errores.
+- [x] `/` muestra el hero, el buscador y el grid de las 8 tarjetas de juego de `GAMES`.
+- [x] Escribir en el buscador de `/` filtra las tarjetas por título en tiempo real.
+- [x] Seleccionar una categoría en los chips de `/` filtra las tarjetas por esa categoría.
+- [x] Buscar un término sin coincidencias muestra el estado vacío "NO HAY RESULTADOS".
+- [x] Hacer clic en una tarjeta o en su botón "JUGAR" navega a `/juego/[id]` con el juego correcto.
+- [x] `/juego/[id]` muestra portada, descripción, stat strip y una tabla de 10 puntuaciones mock.
+- [x] `/juego/id-inexistente` responde con la página 404 de Next.js.
+- [x] El botón "JUGAR AHORA" en `/juego/[id]` navega a `/juego/[id]/jugar`.
+- [x] En `/juego/[id]/jugar`, la puntuación del HUD aumenta automáticamente cada ~220ms mientras no está en pausa ni terminó la partida.
+- [x] Pulsar "PAUSA" detiene el incremento de puntuación y muestra el overlay "EN PAUSA"; pulsar "REANUDAR" lo reactiva.
+- [x] Pulsar "FIN" abre el modal de fin de partida con la puntuación final congelada.
+- [x] Guardar la puntuación en el modal la agrega al array `av_scores` en `localStorage` y muestra el toast "PUNTUACIÓN GUARDADA".
+- [x] En `/auth`, enviar el formulario de "Iniciar sesión" guarda el usuario en `localStorage["av_user"]`, actualiza el Nav en toda la app y navega a `/`.
+- [x] "JUGAR COMO INVITADO" en `/auth` navega a `/` sin crear sesión.
+- [x] Con sesión iniciada, el Nav muestra el nombre de usuario en vez del botón "Iniciar Sesión"; cerrar sesión desde el Nav borra `av_user` y vuelve a mostrar el botón.
+- [x] `/salon` muestra tabs por cada juego de `GAMES`, un podio con los 3 primeros puestos y una tabla con el resto de puntuaciones mock.
+- [x] Con sesión iniciada, `/salon` muestra la fila "tu mejor marca" al final de la tabla; sin sesión, esa fila no aparece.
+- [x] El panel de navegación móvil (hamburguesa) abre y cierra correctamente en viewport angosto.
+- [x] Todas las clases visuales usadas (`.card`, `.av-nav`, `.leaderboard`, `.podium`, `.modal`, etc.) provienen de `app/globals.css` ya migrado; no hay estilos duplicados en CSS-in-JS.
 
 ## Decisions
 
