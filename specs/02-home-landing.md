@@ -1,6 +1,6 @@
 # SPEC 02 — Home (landing) de Arcade Vault
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** [01-pantallas-mvp-visual](./01-pantallas-mvp-visual.md)
 > **Date:** 2026-08-02
 > **Objective:** Migrar la pantalla "Inicio" de `references/templates/home-about/home.jsx` (sin la parte "about") a `/`, moviendo la Biblioteca actual a `/biblioteca` y actualizando el Nav y todos los enlaces internos para reflejar la nueva estructura de rutas.
@@ -41,25 +41,25 @@ Esta spec no introduce estructuras de datos nuevas:
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] `/` muestra el nuevo Home: hero con título "EL ARCADE CLÁSICO ESTÁ DE VUELTA", siluetas pixel flotantes y CTAs "EXPLORAR JUEGOS" / "CREAR CUENTA".
-- [ ] El botón "EXPLORAR JUEGOS" del hero y el CTA final "INSERTAR MONEDA" navegan a `/biblioteca`.
-- [ ] El botón "CREAR CUENTA" del hero navega a `/auth`.
-- [ ] La sección "¿Por qué Arcade Vault?" muestra las 4 feature cards (Juegos clásicos, 100% gratis, Ladder boards, Siempre creciendo).
-- [ ] La sección "Juegos disponibles ahora" muestra 6 `GameCard` con datos reales de `GAMES`, y el botón "VER TODOS LOS JUEGOS →" navega a `/biblioteca`.
-- [ ] La sección de stats muestra los 3 bloques ("12+ JUEGOS", "MILES DE PARTIDAS", "GLOBAL RANKING").
-- [ ] La sección "Actividad en vivo" muestra el ticker de puntuaciones recientes y el top 5 de jugadores; el botón "VER SALÓN →" navega a `/salon`.
-- [ ] La sección "Precios" muestra el plan único gratuito con su lista de beneficios y las 3 preguntas del FAQ; el botón "EMPEZAR GRATIS →" navega a `/auth`.
-- [ ] Las secciones del home (excepto el hero) aparecen con la animación de scroll-reveal al hacer scroll hasta ellas.
-- [ ] `/biblioteca` muestra exactamente el mismo contenido y comportamiento que antes tenía `/` (hero corto, buscador funcional, chips de categoría funcionales, grid de `GameCard`, estado vacío "NO HAY RESULTADOS").
-- [ ] El Nav (desktop y panel móvil) muestra los links "Inicio", "Biblioteca" y "Salón de la Fama" en ese orden, sin "Acerca de".
-- [ ] Estando en `/`, el link "Inicio" del Nav aparece activo; estando en `/biblioteca` o `/juego/[id]`, el link "Biblioteca" aparece activo.
-- [ ] El logo del Nav sigue navegando a `/`.
-- [ ] En `/auth`, tanto "JUGAR COMO INVITADO" como un login/registro exitoso navegan a `/biblioteca` (ya no a `/`).
-- [ ] El botón "volver" en `/juego/[id]` navega a `/biblioteca`.
-- [ ] El botón de fin de partida (volver) en el Reproductor (`/juego/[id]/jugar`) navega a `/biblioteca`.
-- [ ] El botón "volver" en `/salon` navega a `/biblioteca`.
-- [ ] No hay ninguna ruta, botón o link que siga apuntando a `/` esperando encontrar la Biblioteca (solo el logo y el link "Inicio" apuntan a `/`, con la semántica de Home).
+- [X] `npm run build` y `npm run lint` terminan sin errores.
+- [X] `/` muestra el nuevo Home: hero con título "EL ARCADE CLÁSICO ESTÁ DE VUELTA", siluetas pixel flotantes y CTAs "EXPLORAR JUEGOS" / "CREAR CUENTA".
+- [X] El botón "EXPLORAR JUEGOS" del hero y el CTA final "INSERTAR MONEDA" navegan a `/biblioteca`.
+- [X] El botón "CREAR CUENTA" del hero navega a `/auth`.
+- [X] La sección "¿Por qué Arcade Vault?" muestra las 4 feature cards (Juegos clásicos, 100% gratis, Ladder boards, Siempre creciendo).
+- [X] La sección "Juegos disponibles ahora" muestra 6 `GameCard` con datos reales de `GAMES`, y el botón "VER TODOS LOS JUEGOS →" navega a `/biblioteca`.
+- [X] La sección de stats muestra los 3 bloques ("12+ JUEGOS", "MILES DE PARTIDAS", "GLOBAL RANKING").
+- [X] La sección "Actividad en vivo" muestra el ticker de puntuaciones recientes y el top 5 de jugadores; el botón "VER SALÓN →" navega a `/salon`.
+- [X] La sección "Precios" muestra el plan único gratuito con su lista de beneficios y las 3 preguntas del FAQ; el botón "EMPEZAR GRATIS →" navega a `/auth`.
+- [X] Las secciones del home (excepto el hero) aparecen con la animación de scroll-reveal al hacer scroll hasta ellas.
+- [X] `/biblioteca` muestra exactamente el mismo contenido y comportamiento que antes tenía `/` (hero corto, buscador funcional, chips de categoría funcionales, grid de `GameCard`, estado vacío "NO HAY RESULTADOS").
+- [X] El Nav (desktop y panel móvil) muestra los links "Inicio", "Biblioteca" y "Salón de la Fama" en ese orden, sin "Acerca de".
+- [X] Estando en `/`, el link "Inicio" del Nav aparece activo; estando en `/biblioteca` o `/juego/[id]`, el link "Biblioteca" aparece activo.
+- [X] El logo del Nav sigue navegando a `/`.
+- [X] En `/auth`, tanto "JUGAR COMO INVITADO" como un login/registro exitoso navegan a `/biblioteca` (ya no a `/`).
+- [X] El botón "volver" en `/juego/[id]` navega a `/biblioteca`.
+- [X] El botón de fin de partida (volver) en el Reproductor (`/juego/[id]/jugar`) navega a `/biblioteca`.
+- [X] El botón "volver" en `/salon` navega a `/biblioteca`.
+- [X] No hay ninguna ruta, botón o link que siga apuntando a `/` esperando encontrar la Biblioteca (solo el logo y el link "Inicio" apuntan a `/`, con la semántica de Home).
 
 ## Decisions
 
