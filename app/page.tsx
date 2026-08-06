@@ -17,7 +17,7 @@ function useReveal() {
           }
         });
       },
-      { threshold: 0.12 }
+      { threshold: 0.12 },
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
@@ -260,7 +260,11 @@ export default function Home() {
               c: "green",
             },
           ].map((f, i) => (
-            <div key={i} className={"feature-card " + f.c} style={{ transitionDelay: i * 80 + "ms" }}>
+            <div
+              key={i}
+              className={"feature-card " + f.c}
+              style={{ transitionDelay: i * 80 + "ms" }}
+            >
               <FeatureIcon kind={f.i} />
               <div className="ft-title pixel">{f.t}</div>
               <div className="ft-desc">{f.d}</div>
@@ -354,7 +358,9 @@ export default function Home() {
               ].map((r, i) => (
                 <div
                   key={i}
-                  className={"top-row" + (i === 0 ? " top1" : i === 1 ? " top2" : i === 2 ? " top3" : "")}
+                  className={
+                    "top-row" + (i === 0 ? " top1" : i === 1 ? " top2" : i === 2 ? " top3" : "")
+                  }
                 >
                   <span className="tp-rk">#{String(r.r).padStart(2, "0")}</span>
                   <span className="tp-bar">
@@ -393,7 +399,11 @@ export default function Home() {
               <li>✔ Nuevos juegos cada mes</li>
               <li>✔ Funciona en cualquier navegador</li>
             </ul>
-            <button className="btn xl pulse" style={{ width: "100%" }} onClick={() => router.push("/auth")}>
+            <button
+              className="btn xl pulse"
+              style={{ width: "100%" }}
+              onClick={() => router.push("/auth")}
+            >
               EMPEZAR GRATIS →
             </button>
             <div className="pc-foot">No pedimos tarjeta. Nunca lo haremos.</div>
@@ -408,21 +418,22 @@ export default function Home() {
             <div className="faq-item">
               <div className="faq-q pixel">¿REALMENTE ES GRATIS?</div>
               <div className="faq-a">
-                Sí. Arcade Vault es un proyecto sin fines de lucro hecho por amor a los clásicos. No hay versión
-                &quot;premium&quot; escondida.
+                Sí. Arcade Vault es un proyecto sin fines de lucro hecho por amor a los clásicos. No
+                hay versión &quot;premium&quot; escondida.
               </div>
             </div>
             <div className="faq-item">
               <div className="faq-q pixel">¿NECESITO CREAR CUENTA?</div>
               <div className="faq-a">
-                No. Puedes jugar como invitado. Si quieres guardar tu puntuación y aparecer en el ranking,
-                regístrate en 10 segundos.
+                No. Puedes jugar como invitado. Si quieres guardar tu puntuación y aparecer en el
+                ranking, regístrate en 10 segundos.
               </div>
             </div>
             <div className="faq-item">
               <div className="faq-q pixel">¿CÓMO SOBREVIVEN SIN COBRAR?</div>
               <div className="faq-a">
-                Es un proyecto comunitario. Si te gusta, compártelo. Esa es toda la moneda que aceptamos.
+                Es un proyecto comunitario. Si te gusta, compártelo. Esa es toda la moneda que
+                aceptamos.
               </div>
             </div>
           </div>

@@ -62,11 +62,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const login = (nextUser: StoredUser) => setStoredUser(nextUser);
   const logout = () => setStoredUser(null);
 
-  return (
-    <UserContext.Provider value={{ user, login, logout }}>
-      {children}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={{ user, login, logout }}>{children}</UserContext.Provider>;
 }
 
 export function useUser() {

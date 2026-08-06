@@ -8,9 +8,7 @@ export type ContactActionResult = { ok: true } | { ok: false; error: string };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GENERIC_ERROR = "No se pudo enviar el mensaje. Intenta de nuevo en unos minutos.";
 
-export async function enviarMensajeContacto(
-  form: ContactForm
-): Promise<ContactActionResult> {
+export async function enviarMensajeContacto(form: ContactForm): Promise<ContactActionResult> {
   const name = form.name?.trim() ?? "";
   const email = form.email?.trim() ?? "";
   const msg = form.msg?.trim() ?? "";

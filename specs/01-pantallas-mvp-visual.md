@@ -125,11 +125,11 @@ Estado de ruta y sesión:
 
 ## Risks
 
-| Risk | Mitigation |
-| --- | --- |
-| `localStorage` deshabilitado o lleno (modo privado del navegador) | Envolver lecturas/escrituras en `try/catch` (igual que el template); si falla, la app sigue funcionando sin persistencia de sesión/puntuaciones. |
-| `params` en rutas dinámicas es `Promise` en esta versión de Next.js, no un objeto síncrono | Usar siempre `await params` en `app/juego/[id]/page.tsx` y `app/juego/[id]/jugar/page.tsx`; verificar contra `node_modules/next/dist/docs/` antes de escribir el código. |
-| Duplicar estilos: escribir CSS nuevo cuando ya existe una clase equivalente en `globals.css` | Revisar `app/globals.css` antes de agregar cualquier clase o utilidad Tailwind nueva. |
+| Risk                                                                                         | Mitigation                                                                                                                                                               |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `localStorage` deshabilitado o lleno (modo privado del navegador)                            | Envolver lecturas/escrituras en `try/catch` (igual que el template); si falla, la app sigue funcionando sin persistencia de sesión/puntuaciones.                         |
+| `params` en rutas dinámicas es `Promise` en esta versión de Next.js, no un objeto síncrono   | Usar siempre `await params` en `app/juego/[id]/page.tsx` y `app/juego/[id]/jugar/page.tsx`; verificar contra `node_modules/next/dist/docs/` antes de escribir el código. |
+| Duplicar estilos: escribir CSS nuevo cuando ya existe una clase equivalente en `globals.css` | Revisar `app/globals.css` antes de agregar cualquier clase o utilidad Tailwind nueva.                                                                                    |
 
 ## What is **not** in this spec
 
