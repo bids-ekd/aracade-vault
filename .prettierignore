@@ -1,0 +1,16 @@
+# Mirrors the ignores in eslint.config.mjs
+.next/
+out/
+build/
+next-env.d.ts
+
+# Reference-only source material, not part of the Next.js app.
+references/
+
+# Third-party skill content installed via skills-lock.json.
+.agents/
+
+# Standard excludes not covered by eslint.config.mjs
+node_modules/
+package-lock.json
+.git/

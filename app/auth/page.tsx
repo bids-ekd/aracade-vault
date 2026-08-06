@@ -26,7 +26,12 @@ export default function AuthPage() {
           <h2 className="neon-cyan">ARCADE VAULT</h2>
           <div
             className="mono"
-            style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.16em", marginTop: 6 }}
+            style={{
+              fontSize: 11,
+              color: "var(--ink-faint)",
+              letterSpacing: "0.16em",
+              marginTop: 6,
+            }}
           >
             ACCESO AL SISTEMA · v2.6
           </div>
@@ -83,15 +88,21 @@ export default function AuthPage() {
         <div className="auth-divider">O CONTINÚA CON</div>
         <div className="social">
           <button className="btn ghost" type="button">
-            ◆  GOOGLE
+            ◆ GOOGLE
           </button>
           <button className="btn ghost" type="button">
-            ▣  GITHUB
+            ▣ GITHUB
           </button>
         </div>
 
         <div
-          style={{ marginTop: 18, textAlign: "center", fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.1em" }}
+          style={{
+            marginTop: 18,
+            textAlign: "center",
+            fontSize: 11,
+            color: "var(--ink-faint)",
+            letterSpacing: "0.1em",
+          }}
         >
           AL ENTRAR ACEPTAS LOS TÉRMINOS DEL SALÓN ARCADE
         </div>

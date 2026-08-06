@@ -15,7 +15,7 @@ function useReveal() {
           }
         });
       },
-      { threshold: 0.12 }
+      { threshold: 0.12 },
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
@@ -108,15 +108,19 @@ export default function AcercaDe() {
         <div className="kicker pixel neon-yellow">▸ ACERCA DE</div>
         <h1 className="about-title">ACERCA DE ARCADE VAULT</h1>
         <p className="about-mission">
-          ARCADE VAULT nació del amor por los videojuegos clásicos. Nuestra misión es preservar y celebrar
-          los arcades que definieron una generación, haciéndolos accesibles para todos, en cualquier lugar
-          y sin costo.
+          ARCADE VAULT nació del amor por los videojuegos clásicos. Nuestra misión es preservar y
+          celebrar los arcades que definieron una generación, haciéndolos accesibles para todos, en
+          cualquier lugar y sin costo.
         </p>
 
         <div className="highlight-row">
           {[
             { i: "HEART" as const, t: "HECHO CON ❤️ PARA JUGADORES", c: "magenta" },
-            { i: "BROWSER" as const, t: "JUEGOS EN HTML — CORREN EN CUALQUIER NAVEGADOR", c: "cyan" },
+            {
+              i: "BROWSER" as const,
+              t: "JUEGOS EN HTML — CORREN EN CUALQUIER NAVEGADOR",
+              c: "cyan",
+            },
             { i: "PLANT" as const, t: "PROYECTO EN CONSTANTE CRECIMIENTO", c: "green" },
           ].map((h, i) => (
             <div key={i} className={"highlight " + h.c} style={{ transitionDelay: i * 80 + "ms" }}>

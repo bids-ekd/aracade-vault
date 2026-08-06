@@ -64,19 +64,12 @@ export function Nav() {
             Iniciar Sesión
           </Link>
         )}
-        <button
-          className="btn ghost hamburger"
-          onClick={() => setOpen(true)}
-          aria-label="Menú"
-        >
+        <button className="btn ghost hamburger" onClick={() => setOpen(true)} aria-label="Menú">
           ≡
         </button>
       </nav>
 
-      <div
-        className={"av-mobile-backdrop" + (open ? " open" : "")}
-        onClick={close}
-      ></div>
+      <div className={"av-mobile-backdrop" + (open ? " open" : "")} onClick={close}></div>
       <aside className={"av-mobile-panel" + (open ? " open" : "")}>
         <div className="pixel neon-cyan" style={{ fontSize: 11, marginBottom: 16 }}>
           MENÚ
