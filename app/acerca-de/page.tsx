@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { enviarMensajeContacto, type ContactForm } from "./actions";
 
 function useReveal() {
   useEffect(() => {
@@ -20,8 +21,6 @@ function useReveal() {
     return () => io.disconnect();
   }, []);
 }
-
-type ContactForm = { name: string; email: string; msg: string };
 
 function HighlightIcon({ kind }: { kind: "HEART" | "BROWSER" | "PLANT" }) {
   const C = "currentColor";
@@ -81,15 +80,25 @@ export default function AcercaDe() {
   const [form, setForm] = useState<ContactForm>({ name: "", email: "", msg: "" });
   const [sent, setSent] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim() || !form.msg.trim()) {
       setShake(true);
       setTimeout(() => setShake(false), 400);
       return;
     }
-    setSent(form.name.trim());
+    setSending(true);
+    setError(null);
+    const result = await enviarMensajeContacto(form);
+    if (result.ok) {
+      setSent(form.name.trim());
+    } else {
+      setError(result.error);
+      setSending(false);
+    }
   };
 
   return (
@@ -181,9 +190,29 @@ export default function AcercaDe() {
                     placeholder="Cuéntanos qué tienes en mente…"
                   ></textarea>
                 </div>
-                <button className="btn xl press" type="submit" style={{ width: "100%" }}>
-                  ▶ ENVIAR MENSAJE
+                <button
+                  className="btn xl press"
+                  type="submit"
+                  disabled={sending}
+                  style={{ width: "100%" }}
+                >
+                  {sending ? (
+                    <>
+                      <span className="spinner" aria-hidden="true"></span> ENVIANDO…
+                    </>
+                  ) : (
+                    "▶ ENVIAR MENSAJE"
+                  )}
                 </button>
+                {error && (
+                  <div
+                    className="pixel neon-magenta"
+                    role="alert"
+                    style={{ fontSize: 10, marginTop: 14, letterSpacing: "0.06em" }}
+                  >
+                    ⚠ {error}
+                  </div>
+                )}
               </>
             ) : (
               <div className="terminal-success">
