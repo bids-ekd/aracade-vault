@@ -1,6 +1,6 @@
 # SPEC 03 — Acerca de + envío de correo de contacto
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** [02-home-landing](./02-home-landing.md)
 > **Date:** 2026-08-05
 > **Objective:** Implementar la ruta `/acerca-de` replicando exactamente `references/templates/home-about/about.jsx` (hero, highlights, divisor y formulario de contacto), donde el formulario envía un correo real vía Resend a través de una Server Action.
@@ -38,7 +38,7 @@ type ContactForm = { name: string; email: string; msg: string };
 // app/acerca-de/actions.ts — Server Action
 type ContactActionResult = { ok: true } | { ok: false; error: string };
 
-async function enviarMensajeContacto(form: ContactForm): Promise<ContactActionResult>
+async function enviarMensajeContacto(form: ContactForm): Promise<ContactActionResult>;
 ```
 
 Variables de entorno (solo servidor, sin prefijo `NEXT_PUBLIC_`, documentadas en `.env.example` sin valores reales):
@@ -60,17 +60,17 @@ Convención: `ContactActionResult` es lo único que la Server Action retorna al 
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] `/acerca-de` muestra el hero "ACERCA DE ARCADE VAULT" con el texto de misión y los 3 highlights (HECHO CON ❤️, JUEGOS EN HTML, PROYECTO EN CONSTANTE CRECIMIENTO).
-- [ ] El divisor animado y la sección de contacto aparecen con la animación de scroll-reveal al hacer scroll hasta ellos.
-- [ ] Enviar el formulario de contacto con algún campo vacío dispara el shake de 400ms y no llama a la Server Action.
-- [ ] Enviar el formulario con los 3 campos completos y `RESEND_API_KEY`/`RESEND_TO_EMAIL` configuradas envía un correo real a `RESEND_TO_EMAIL` vía Resend, con `reply_to` igual al email ingresado en el formulario.
-- [ ] Tras un envío exitoso, el formulario se reemplaza por la vista `terminal-success` con el nombre del visitante en mayúsculas, igual que el template.
-- [ ] El botón "ENVIAR OTRO MENSAJE" en la vista de éxito vacía el formulario y permite enviar un nuevo mensaje.
-- [ ] Si `RESEND_API_KEY` o `RESEND_TO_EMAIL` faltan, o Resend responde con error, el formulario muestra un mensaje de error inline y el botón de envío vuelve a estar habilitado.
-- [ ] El Nav (desktop y panel móvil) muestra el link "Acerca de" después de "Salón de la Fama".
-- [ ] Estando en `/acerca-de`, el link "Acerca de" del Nav aparece activo.
-- [ ] `.env.example` existe en la raíz y documenta `RESEND_API_KEY` y `RESEND_TO_EMAIL` sin valores reales.
+- [x] `npm run build` y `npm run lint` terminan sin errores.
+- [x] `/acerca-de` muestra el hero "ACERCA DE ARCADE VAULT" con el texto de misión y los 3 highlights (HECHO CON ❤️, JUEGOS EN HTML, PROYECTO EN CONSTANTE CRECIMIENTO).
+- [x] El divisor animado y la sección de contacto aparecen con la animación de scroll-reveal al hacer scroll hasta ellos.
+- [x] Enviar el formulario de contacto con algún campo vacío dispara el shake de 400ms y no llama a la Server Action.
+- [x] Enviar el formulario con los 3 campos completos y `RESEND_API_KEY`/`RESEND_TO_EMAIL` configuradas envía un correo real a `RESEND_TO_EMAIL` vía Resend, con `reply_to` igual al email ingresado en el formulario.
+- [x] Tras un envío exitoso, el formulario se reemplaza por la vista `terminal-success` con el nombre del visitante en mayúsculas, igual que el template.
+- [x] El botón "ENVIAR OTRO MENSAJE" en la vista de éxito vacía el formulario y permite enviar un nuevo mensaje.
+- [x] Si `RESEND_API_KEY` o `RESEND_TO_EMAIL` faltan, o Resend responde con error, el formulario muestra un mensaje de error inline y el botón de envío vuelve a estar habilitado.
+- [x] El Nav (desktop y panel móvil) muestra el link "Acerca de" después de "Salón de la Fama".
+- [x] Estando en `/acerca-de`, el link "Acerca de" del Nav aparece activo.
+- [x] `.env.example` existe en la raíz y documenta `RESEND_API_KEY` y `RESEND_TO_EMAIL` sin valores reales.
 
 ## Decisions
 
@@ -90,11 +90,11 @@ Convención: `ContactActionResult` es lo único que la Server Action retorna al 
 
 ## Risks
 
-| Risk | Mitigation |
-| --- | --- |
-| El sandbox `onboarding@resend.dev` solo entrega al correo verificado de la cuenta Resend, no a cualquier `RESEND_TO_EMAIL` | Documentado en `.env.example`; para producción real hay que verificar un dominio propio en Resend (fuera de alcance de este spec). |
-| `RESEND_API_KEY` expuesta accidentalmente (ej. commiteada) | `.env*` ya está en `.gitignore`; `.env.example` no lleva valores reales, solo los nombres de las variables. |
-| Resend caído, con rate limit, o `RESEND_API_KEY` inválida | Manejo de error inline en el formulario con reintento manual del usuario (ver Acceptance criteria). |
+| Risk                                                                                                                            | Mitigation                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| El sandbox `onboarding@resend.dev` solo entrega al correo verificado de la cuenta Resend, no a cualquier `RESEND_TO_EMAIL`      | Documentado en `.env.example`; para producción real hay que verificar un dominio propio en Resend (fuera de alcance de este spec).                                              |
+| `RESEND_API_KEY` expuesta accidentalmente (ej. commiteada)                                                                      | `.env*` ya está en `.gitignore`; `.env.example` no lleva valores reales, solo los nombres de las variables.                                                                     |
+| Resend caído, con rate limit, o `RESEND_API_KEY` inválida                                                                       | Manejo de error inline en el formulario con reintento manual del usuario (ver Acceptance criteria).                                                                             |
 | La Server Action es un endpoint público sin autenticación: cualquiera que pueda hacer el POST puede disparar envíos, sin límite | Riesgo aceptado por decisión explícita (anti-spam fuera de alcance en este spec); se puede mitigar en un spec futuro con rate limiting o captcha si se vuelve un problema real. |
 
 ## What is **not** in this spec
