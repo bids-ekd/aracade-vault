@@ -1,6 +1,6 @@
 # SPEC 07 — Leaderboard real de Asteroides
 
-> **Status:** Draft
+> **Status:** Approved
 > **Depends on:** [06-tabla-juegos-supabase](./06-tabla-juegos-supabase.md), [04-supabase-auth](./04-supabase-auth.md)
 > **Date:** 2026-08-07
 > **Objective:** Reemplazar el leaderboard mock de `asteroides` — en `/salon` y en la ficha de detalle `/juego/asteroides` — por puntuaciones reales persistidas en una tabla `scores` de Supabase, con identidad estable por jugador (cuenta o invitado), controles anti-abuso (rango de score, rate-limit, RLS) y migración automática del histórico ya guardado en `localStorage`, dejando el resto del catálogo (8 juegos) con su leaderboard mock intacto.
