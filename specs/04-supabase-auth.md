@@ -1,6 +1,6 @@
 # SPEC 04 — Autenticación real con Supabase
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** [03-about-contacto-resend](./03-about-contacto-resend.md)
 > **Date:** 2026-08-06
 > **Objective:** Configurar el cliente de Supabase (browser, server y proxy) y reemplazar la autenticación mock de `UserProvider` (`localStorage`) por Supabase Auth real con email y contraseña, incluyendo confirmación de email y recuperación de contraseña.
@@ -111,21 +111,21 @@ Convención: todas las Server Actions devuelven `AuthActionResult`, mismo patró
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] Registrarse con usuario (display name) + email + contraseña crea un usuario real en Supabase Auth y no permite iniciar sesión hasta confirmar el email.
-- [ ] El correo de confirmación llega vía Resend (SMTP personalizado); al hacer click en el link, la cuenta queda confirmada y el usuario termina con sesión iniciada en `/biblioteca`.
-- [ ] Iniciar sesión con email + contraseña de una cuenta ya confirmada crea la sesión y redirige a `/biblioteca`.
-- [ ] Iniciar sesión con una cuenta sin confirmar, o con credenciales incorrectas, muestra un mensaje de error inline sin crear sesión y sin romper el formulario.
-- [ ] El Nav muestra "Iniciar Sesión" cuando no hay sesión, y el nombre (display name) del usuario cuando sí la hay.
-- [ ] Cerrar sesión desde el Nav limpia la sesión de Supabase y el Nav vuelve a mostrar "Iniciar Sesión".
-- [ ] "JUGAR COMO INVITADO" en `/auth` sigue navegando directo a `/biblioteca` sin crear ninguna sesión.
-- [ ] `/auth/recuperar` envía el correo de recuperación vía Resend cuando el email ingresado corresponde a una cuenta existente.
-- [ ] El link del correo de recuperación lleva a `/auth/nueva-contrasena` con una sesión de recuperación activa.
-- [ ] Definir la nueva contraseña en `/auth/nueva-contrasena` permite iniciar sesión después con la nueva contraseña, y la vieja contraseña deja de funcionar.
-- [ ] Acceder directamente a `/auth/nueva-contrasena` sin haber pasado por el link de recuperación redirige a `/auth/recuperar`.
-- [ ] Recargar la página (F5) en cualquier ruta estando logueado mantiene la sesión iniciada.
-- [ ] `/salon` y el Reproductor (`/juego/[id]/jugar`) siguen funcionando sin errores, mostrando el nombre del usuario autenticado donde corresponde, sin cambios en la lógica de puntuación.
-- [ ] `.env.example` documenta `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` sin valores reales.
+- [x] `npm run build` y `npm run lint` terminan sin errores.
+- [x] Registrarse con usuario (display name) + email + contraseña crea un usuario real en Supabase Auth y no permite iniciar sesión hasta confirmar el email.
+- [x] El correo de confirmación llega vía Resend (SMTP personalizado); al hacer click en el link, la cuenta queda confirmada y el usuario termina con sesión iniciada en `/biblioteca`.
+- [x] Iniciar sesión con email + contraseña de una cuenta ya confirmada crea la sesión y redirige a `/biblioteca`.
+- [x] Iniciar sesión con una cuenta sin confirmar, o con credenciales incorrectas, muestra un mensaje de error inline sin crear sesión y sin romper el formulario.
+- [x] El Nav muestra "Iniciar Sesión" cuando no hay sesión, y el nombre (display name) del usuario cuando sí la hay.
+- [x] Cerrar sesión desde el Nav limpia la sesión de Supabase y el Nav vuelve a mostrar "Iniciar Sesión".
+- [x] "JUGAR COMO INVITADO" en `/auth` sigue navegando directo a `/biblioteca` sin crear ninguna sesión.
+- [x] `/auth/recuperar` envía el correo de recuperación vía Resend cuando el email ingresado corresponde a una cuenta existente.
+- [x] El link del correo de recuperación lleva a `/auth/nueva-contrasena` con una sesión de recuperación activa.
+- [x] Definir la nueva contraseña en `/auth/nueva-contrasena` permite iniciar sesión después con la nueva contraseña, y la vieja contraseña deja de funcionar.
+- [x] Acceder directamente a `/auth/nueva-contrasena` sin haber pasado por el link de recuperación redirige a `/auth/recuperar`.
+- [x] Recargar la página (F5) en cualquier ruta estando logueado mantiene la sesión iniciada.
+- [x] `/salon` y el Reproductor (`/juego/[id]/jugar`) siguen funcionando sin errores, mostrando el nombre del usuario autenticado donde corresponde, sin cambios en la lógica de puntuación.
+- [x] `.env.example` documenta `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` sin valores reales.
 
 ## Decisions
 
@@ -155,6 +155,13 @@ Convención: todas las Server Actions devuelven `AuthActionResult`, mismo patró
 | Las Server Actions (`iniciarSesion`, `crearCuenta`, `enviarCorreoRecuperacion`, `actualizarContrasena`) son endpoints públicos invocables sin pasar por la UI                                                         | Supabase Auth ya aplica sus propios rate limits y validaciones server-side; no se agrega protección extra en este spec, mismo criterio aceptado en spec 03 para el formulario de contacto  |
 | Flash inicial "sin sesión" mientras `UserProvider` resuelve la sesión de Supabase de forma asíncrona en el cliente (antes era síncrono vía `localStorage`)                                                            | Campo `loading` en el contexto; se acepta un parpadeo breve como parte del alcance — SSR completo del estado de auth queda fuera de este spec                                              |
 | Desincronización de cookies entre server y browser si `proxy.ts` no propaga bien la `NextResponse`                                                                                                                    | Seguir al pie de la letra el patrón oficial de Supabase verificado contra su documentación (paso 3 del plan)                                                                               |
+
+## Implementation notes
+
+Durante la verificación de los criterios de aceptación (paso 8) se encontraron y corrigieron dos bugs de sincronización cliente/servidor no cubiertos explícitamente por el plan original:
+
+- **Nav no se actualizaba tras el login:** `iniciarSesion` corre en el servidor (cliente de `lib/supabase/server.ts`) y establece la sesión vía cookies, pero `UserProvider` depende del cliente _browser_ y de `onAuthStateChange`, que solo dispara al reinicializarse o por acciones hechas con esa misma instancia. Una navegación soft (`router.push`) no reinicializaba el cliente browser, así que el Nav quedaba mostrando "Iniciar Sesión" hasta un F5. Fix: `app/auth/page.tsx` usa `window.location.href` (navegación completa) tras un login exitoso en vez de `router.push`. El registro no lo necesita porque no deja sesión activa (falta confirmar el email), y `nueva-contrasena-form.tsx` tampoco porque la sesión de recuperación ya se estableció antes vía un redirect completo desde `/auth/confirm`.
+- **El Reproductor mostraba "INVITADO" con sesión iniciada:** `components/game-player.tsx` inicializaba el nombre con `useState(user ? user.name : "INVITADO")`, que captura un valor fijo en el primer render. Como `user` resuelve de forma asíncrona, en una carga directa de la página el valor quedaba congelado en "INVITADO" para siempre, aunque el Nav sí mostrara la sesión correctamente. Fix: el nombre se deriva en cada render (`nameOverride ?? (user ? user.name : "INVITADO")`) en vez de fijarse una sola vez, preservando el override manual del jugador en el prompt de guardar puntuación.
 
 ## What is **not** in this spec
 
