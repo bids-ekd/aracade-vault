@@ -1,6 +1,6 @@
 # SPEC 05 — Asteroides (juego real nuevo)
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** [04-supabase-auth](./04-supabase-auth.md)
 > **Date:** 2026-08-06
 > **Objective:** Portar el juego de Asteroids de `references/started-games/02-asteroids/` (canvas HTML5 vanilla) a un motor + componente React/Next.js real en `components/games/asteroids/`, agregado como una entrada **nueva y aislada** del catálogo (`id: "asteroides"`, sin tocar el juego existente `rocas`) e integrado en `/juego/asteroides/jugar`, reemplazando la simulación mock de `GamePlayer` únicamente para esa entrada — el resto del catálogo, incluyendo `rocas`, sigue simulado sin ningún cambio.
@@ -117,22 +117,22 @@ No se introduce ningún nuevo mecanismo de persistencia — `av_scores` en `loca
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] `/biblioteca` muestra una ficha nueva "ASTEROIDES" (portada `.cover-asteroides`, acento cian), separada de "ROCAS", que sigue existiendo sin cambios.
-- [ ] `/juego/asteroides` (detalle) muestra el copy aprobado y la etiqueta "TECLADO" (no "TECLADO / TÁCTIL").
-- [ ] `/juego/rocas` (detalle) sigue mostrando "TECLADO / TÁCTIL", igual que el resto del catálogo.
-- [ ] `/juego/asteroides/jugar` renderiza el canvas real del juego: nave controlable con `←`/`→`/`↑`, disparo con `Espacio`, asteroides que se dividen al ser destruidos, envolvimiento toroidal de bordes.
-- [ ] El HUD dentro del canvas (SCORE/NIVEL/vidas/indicador "3x" cuando aplica) se ve durante toda la partida.
-- [ ] El HUD externo de la plataforma (Puntuación/Vidas/Nivel en `player-hud`) muestra en todo momento los mismos valores que el HUD interno del canvas, sin desincronizarse.
-- [ ] Al perder una vida, la nave respawnea con parpadeo de invencibilidad temporal; al llegar a 0 vidas, el canvas ya no muestra un overlay "GAME OVER" propio — en su lugar se abre el modal de fin de partida de la plataforma con el score final correcto.
-- [ ] Destruir todos los asteroides de un nivel avanza al siguiente (el HUD de nivel, interno y externo, sube en sincronía).
-- [ ] Recoger el power-up cian activa disparo triple por su duración; al expirar, vuelve a disparo simple.
-- [ ] El botón "PAUSA" congela el juego por completo (nada se mueve, el teclado no responde) y "REANUDAR" retoma sin saltos bruscos.
-- [ ] El botón "FIN" fuerza el fin de partida inmediatamente con el score acumulado hasta ese momento, mostrando el modal de fin de partida.
-- [ ] Desde el modal de fin de partida, "GUARDAR PUNTUACIÓN" persiste el score real en `localStorage` bajo `av_scores` con `game: "asteroides"`.
-- [ ] "JUGAR DE NUEVO" desde el modal arranca una partida nueva desde cero (score 0, 3 vidas, nivel 1, campo de asteroides nuevo), tanto en el HUD interno como en el externo.
-- [ ] "SALIR" navega a `/juego/asteroides` sin errores en consola y sin loops de animación colgados (el `requestAnimationFrame` se cancela al desmontar).
-- [ ] `/juego/rocas/jugar` y el resto de los juegos del catálogo siguen funcionando exactamente igual que antes de este spec (simulación mock intacta, sin regresiones).
+- [x] `npm run build` y `npm run lint` terminan sin errores.
+- [x] `/biblioteca` muestra una ficha nueva "ASTEROIDES" (portada `.cover-asteroides`, acento cian), separada de "ROCAS", que sigue existiendo sin cambios.
+- [x] `/juego/asteroides` (detalle) muestra el copy aprobado y la etiqueta "TECLADO" (no "TECLADO / TÁCTIL").
+- [x] `/juego/rocas` (detalle) sigue mostrando "TECLADO / TÁCTIL", igual que el resto del catálogo.
+- [x] `/juego/asteroides/jugar` renderiza el canvas real del juego: nave controlable con `←`/`→`/`↑`, disparo con `Espacio`, asteroides que se dividen al ser destruidos, envolvimiento toroidal de bordes.
+- [x] El HUD dentro del canvas (SCORE/NIVEL/vidas/indicador "3x" cuando aplica) se ve durante toda la partida.
+- [x] El HUD externo de la plataforma (Puntuación/Vidas/Nivel en `player-hud`) muestra en todo momento los mismos valores que el HUD interno del canvas, sin desincronizarse.
+- [x] Al perder una vida, la nave respawnea con parpadeo de invencibilidad temporal; al llegar a 0 vidas, el canvas ya no muestra un overlay "GAME OVER" propio — en su lugar se abre el modal de fin de partida de la plataforma con el score final correcto.
+- [x] Destruir todos los asteroides de un nivel avanza al siguiente (el HUD de nivel, interno y externo, sube en sincronía).
+- [x] Recoger el power-up cian activa disparo triple por su duración; al expirar, vuelve a disparo simple.
+- [x] El botón "PAUSA" congela el juego por completo (nada se mueve, el teclado no responde) y "REANUDAR" retoma sin saltos bruscos.
+- [x] El botón "FIN" fuerza el fin de partida inmediatamente con el score acumulado hasta ese momento, mostrando el modal de fin de partida.
+- [x] Desde el modal de fin de partida, "GUARDAR PUNTUACIÓN" persiste el score real en `localStorage` bajo `av_scores` con `game: "asteroides"`.
+- [x] "JUGAR DE NUEVO" desde el modal arranca una partida nueva desde cero (score 0, 3 vidas, nivel 1, campo de asteroides nuevo), tanto en el HUD interno como en el externo.
+- [x] "SALIR" navega a `/juego/asteroides` sin errores en consola y sin loops de animación colgados (el `requestAnimationFrame` se cancela al desmontar).
+- [x] `/juego/rocas/jugar` y el resto de los juegos del catálogo siguen funcionando exactamente igual que antes de este spec (simulación mock intacta, sin regresiones).
 
 ## Decisions
 
