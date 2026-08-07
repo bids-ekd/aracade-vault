@@ -799,6 +799,33 @@ a {
   filter: drop-shadow(0 0 6px rgba(0, 245, 255, 0.4));
 }
 
+.cover-asteroides {
+  background: linear-gradient(145deg, #001824, #04001a 55%, #000);
+}
+.cover-asteroides::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 35%, #8fa9bd 0 22px, transparent 23px),
+    radial-gradient(circle at 68% 68%, #6d8496 0 30px, transparent 31px),
+    radial-gradient(circle at 82% 18%, #56697a 0 12px, transparent 13px),
+    radial-gradient(circle at 78% 30%, var(--cyan) 0 3px, transparent 4px),
+    radial-gradient(circle at 15% 18%, var(--cyan) 0 2px, transparent 3px),
+    radial-gradient(circle at 40% 88%, var(--cyan) 0 2px, transparent 3px);
+  filter: drop-shadow(0 0 8px rgba(0, 245, 255, 0.35));
+}
+.cover-asteroides::before {
+  content: "▲";
+  position: absolute;
+  left: 20%;
+  top: 60%;
+  color: var(--cyan);
+  font-size: 20px;
+  transform: rotate(-35deg);
+  text-shadow: 0 0 8px var(--cyan);
+}
+
 /* ===== detail screen ===== */
 .av-detail {
   display: grid;

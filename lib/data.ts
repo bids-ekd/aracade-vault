@@ -2,6 +2,8 @@
 
 export type GameCategory = "ARCADE" | "PUZZLE" | "SHOOTER" | "VERSUS";
 
+export type GameControls = "teclado" | "teclado-tactil";
+
 export type Game = {
   id: string;
   title: string;
@@ -12,6 +14,7 @@ export type Game = {
   color: "cyan" | "magenta" | "green" | "yellow";
   best: number;
   plays: string; // ej. "12.4K"
+  controls: GameControls;
 };
 
 export const GAMES: Game[] = [
@@ -25,6 +28,7 @@ export const GAMES: Game[] = [
     color: "cyan",
     best: 28450,
     plays: "12.4K",
+    controls: "teclado-tactil",
   },
   {
     id: "caida",
@@ -36,6 +40,7 @@ export const GAMES: Game[] = [
     color: "magenta",
     best: 184220,
     plays: "31.8K",
+    controls: "teclado-tactil",
   },
   {
     id: "serpentina",
@@ -47,6 +52,7 @@ export const GAMES: Game[] = [
     color: "green",
     best: 7820,
     plays: "9.1K",
+    controls: "teclado-tactil",
   },
   {
     id: "gloton",
@@ -58,6 +64,7 @@ export const GAMES: Game[] = [
     color: "yellow",
     best: 96400,
     plays: "27.2K",
+    controls: "teclado-tactil",
   },
   {
     id: "invasores",
@@ -69,6 +76,7 @@ export const GAMES: Game[] = [
     color: "green",
     best: 54190,
     plays: "18.0K",
+    controls: "teclado-tactil",
   },
   {
     id: "rocas",
@@ -80,6 +88,7 @@ export const GAMES: Game[] = [
     color: "yellow",
     best: 41200,
     plays: "15.6K",
+    controls: "teclado-tactil",
   },
   {
     id: "ranaria",
@@ -91,6 +100,7 @@ export const GAMES: Game[] = [
     color: "green",
     best: 18900,
     plays: "6.4K",
+    controls: "teclado-tactil",
   },
   {
     id: "duelo-pixel",
@@ -102,6 +112,19 @@ export const GAMES: Game[] = [
     color: "cyan",
     best: 24,
     plays: "4.2K",
+    controls: "teclado-tactil",
+  },
+  {
+    id: "asteroides",
+    title: "ASTEROIDES",
+    short: "El clásico Asteroids, jugable de verdad.",
+    long: "Pilota una nave triangular en el vacío del espacio, dispara y rota para partir asteroides en fragmentos cada vez más pequeños. El primer juego del Vault que corre con un motor real — sin simulación, cada partida es distinta.",
+    cat: "SHOOTER",
+    cover: "cover-asteroides",
+    color: "cyan",
+    best: 63700,
+    plays: "3.1K",
+    controls: "teclado",
   },
 ];
 
