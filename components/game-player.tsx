@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { AsteroidsCanvas } from "@/components/games/asteroids/asteroids-canvas";
 import { useUser } from "@/components/user-provider";
 import type { Game } from "@/lib/data";
 
@@ -19,8 +20,13 @@ function saveScore(entry: { game: string; score: number; name: string }) {
 
 export function GamePlayer({ game }: { game: Game }) {
   const { user } = useUser();
+  // ASTEROIDES es, por ahora, el único juego con motor real: cuando `controls`
+  // es "teclado" se monta AsteroidsCanvas en vez de la simulación mock.
+  const isRealEngine = game.controls === "teclado";
   const [score, setScore] = useState(0);
-  const [lives] = useState(3);
+  const [lives, setLives] = useState(3);
+  const [level, setLevel] = useState(1);
+  const [resetToken, setResetToken] = useState(0);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
   // user resuelve de forma asíncrona (sesión real de Supabase). En vez de
@@ -30,20 +36,40 @@ export function GamePlayer({ game }: { game: Game }) {
   const [nameOverride, setNameOverride] = useState<string | null>(null);
   const name = nameOverride ?? (user ? user.name : "INVITADO");
   const [saved, setSaved] = useState(false);
-  const level = 1 + Math.floor(score / 2500);
+  // Para el resto del catálogo (simulado) el nivel sigue derivándose del score,
+  // tal como antes; ASTEROIDES lo recibe en vivo del motor vía onStateChange.
+  const displayLevel = isRealEngine ? level : 1 + Math.floor(score / 2500);
 
   useEffect(() => {
+    if (isRealEngine) return;
     if (over || paused) return;
     const t = setInterval(() => setScore((s) => s + Math.floor(10 + Math.random() * 90)), 220);
     return () => clearInterval(t);
-  }, [over, paused]);
+  }, [isRealEngine, over, paused]);
+
+  const handleStateChange = useCallback(
+    (state: { score: number; lives: number; level: number }) => {
+      setScore(state.score);
+      setLives(state.lives);
+      setLevel(state.level);
+    },
+    [],
+  );
+
+  const handleGameOver = useCallback((finalScore: number) => {
+    setScore(finalScore);
+    setOver(true);
+  }, []);
 
   const endGame = () => setOver(true);
   const restart = () => {
     setScore(0);
+    setLives(3);
+    setLevel(1);
     setPaused(false);
     setOver(false);
     setSaved(false);
+    if (isRealEngine) setResetToken((t) => t + 1);
   };
 
   return (
@@ -66,7 +92,7 @@ export function GamePlayer({ game }: { game: Game }) {
           </div>
           <div className="hud-stat level">
             <div className="l">Nivel</div>
-            <div className="v">{String(level).padStart(2, "0")}</div>
+            <div className="v">{String(displayLevel).padStart(2, "0")}</div>
           </div>
         </div>
         <div className="hud-actions">
@@ -85,11 +111,22 @@ export function GamePlayer({ game }: { game: Game }) {
       <div className="crt">
         <div className="crt-screen">
           <div className="game-arena">
-            <div className="grid-floor"></div>
-            <div className="enemy e1"></div>
-            <div className="enemy e2"></div>
-            <div className="enemy e3"></div>
-            <div className="player-ship"></div>
+            {isRealEngine ? (
+              <AsteroidsCanvas
+                key={resetToken}
+                paused={paused || over}
+                onStateChange={handleStateChange}
+                onGameOver={handleGameOver}
+              />
+            ) : (
+              <>
+                <div className="grid-floor"></div>
+                <div className="enemy e1"></div>
+                <div className="enemy e2"></div>
+                <div className="enemy e3"></div>
+                <div className="player-ship"></div>
+              </>
+            )}
           </div>
           {paused && (
             <div className="crt-content" style={{ background: "rgba(0,0,0,0.6)", zIndex: 5 }}>
