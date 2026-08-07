@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { GAMES, seededScores } from "@/lib/data";
+import { seededScores } from "@/lib/data";
+import { getGameBySlug } from "@/lib/supabase/games";
 
 export default async function GameDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const game = GAMES.find((g) => g.id === id);
+  const game = await getGameBySlug(id);
   if (!game) notFound();
 
   const scores = seededScores(id.length * 17 + 3, 10);

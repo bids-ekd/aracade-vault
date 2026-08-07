@@ -114,18 +114,6 @@ export const GAMES: Game[] = [
     plays: "4.2K",
     controls: "teclado-tactil",
   },
-  {
-    id: "asteroides",
-    title: "ASTEROIDES",
-    short: "El clásico Asteroids, jugable de verdad.",
-    long: "Pilota una nave triangular en el vacío del espacio, dispara y rota para partir asteroides en fragmentos cada vez más pequeños. El primer juego del Vault que corre con un motor real — sin simulación, cada partida es distinta.",
-    cat: "SHOOTER",
-    cover: "cover-asteroides",
-    color: "cyan",
-    best: 63700,
-    plays: "3.1K",
-    controls: "teclado",
-  },
 ];
 
 export const CATS: ("TODOS" | GameCategory)[] = ["TODOS", "ARCADE", "PUZZLE", "SHOOTER", "VERSUS"];
