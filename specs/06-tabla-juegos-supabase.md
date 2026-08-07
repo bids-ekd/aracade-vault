@@ -1,6 +1,6 @@
 # SPEC 06 — Tabla de juegos en Supabase (`games`)
 
-> **Status:** Approved.
+> **Status:** Implemented.
 > **Depends on:** [04-supabase-auth](./04-supabase-auth.md)
 > **Date:** 2026-08-07
 > **Objective:** Crear la tabla `games` en Supabase (solo lectura pública vía RLS) para alojar los juegos del catálogo con motor real — hoy únicamente `asteroides` —, y hacer que biblioteca, detalle y jugador la lean combinada con el resto del catálogo mock que sigue en `lib/data.ts`, sin cambios visuales ni funcionales para quien juega.
@@ -105,16 +105,16 @@ export function BibliotecaGrid(props: BibliotecaGridProps): JSX.Element;
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] La tabla `games` existe en Supabase con RLS habilitado, una sola policy de lectura pública (`anon` y `authenticated`) y ninguna policy de escritura.
-- [ ] La tabla `games` tiene exactamente una fila (`asteroides`) con los mismos valores que tenía en el mock antes de este spec.
-- [ ] Un intento de `insert`/`update`/`delete` sobre `games` con el rol `anon` (sin service role) falla por RLS.
-- [ ] `/biblioteca` muestra las mismas 9 fichas que antes de este spec, en el mismo orden, con el mismo contenido visual (incluida "ASTEROIDES").
-- [ ] El filtro por categoría y la búsqueda por texto en `/biblioteca` funcionan igual que antes, incluyendo sobre la ficha "ASTEROIDES".
-- [ ] `/juego/asteroides` (detalle) muestra el mismo copy, portada y etiqueta "TECLADO" que antes, ahora leído desde Supabase.
-- [ ] `/juego/asteroides/jugar` sigue siendo jugable de punta a punta (motor real, HUD, power-up, pausa, fin de partida, guardar puntuación en `localStorage`), sin regresiones respecto al spec 05.
-- [ ] El detalle y el jugador del resto del catálogo (ej. `/juego/rocas`, `/juego/rocas/jugar`) siguen funcionando exactamente igual que antes, leyendo del mock de `lib/data.ts`.
-- [ ] Navegar a una ruta `/juego/<id-inexistente>` sigue devolviendo 404 (`notFound()`), tanto para slugs que ya no existen en el mock como para slugs inexistentes en Supabase.
+- [x] `npm run build` y `npm run lint` terminan sin errores.
+- [x] La tabla `games` existe en Supabase con RLS habilitado, una sola policy de lectura pública (`anon` y `authenticated`) y ninguna policy de escritura.
+- [x] La tabla `games` tiene exactamente una fila (`asteroides`) con los mismos valores que tenía en el mock antes de este spec.
+- [x] Un intento de `insert`/`update`/`delete` sobre `games` con el rol `anon` (sin service role) falla por RLS.
+- [x] `/biblioteca` muestra las mismas 9 fichas que antes de este spec, en el mismo orden, con el mismo contenido visual (incluida "ASTEROIDES").
+- [x] El filtro por categoría y la búsqueda por texto en `/biblioteca` funcionan igual que antes, incluyendo sobre la ficha "ASTEROIDES".
+- [x] `/juego/asteroides` (detalle) muestra el mismo copy, portada y etiqueta "TECLADO" que antes, ahora leído desde Supabase.
+- [x] `/juego/asteroides/jugar` sigue siendo jugable de punta a punta (motor real, HUD, power-up, pausa, fin de partida, guardar puntuación en `localStorage`), sin regresiones respecto al spec 05.
+- [x] El detalle y el jugador del resto del catálogo (ej. `/juego/rocas`, `/juego/rocas/jugar`) siguen funcionando exactamente igual que antes, leyendo del mock de `lib/data.ts`.
+- [x] Navegar a una ruta `/juego/<id-inexistente>` sigue devolviendo 404 (`notFound()`), tanto para slugs que ya no existen en el mock como para slugs inexistentes en Supabase.
 
 ## Decisions
 
