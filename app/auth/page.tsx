@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { crearCuenta, iniciarSesion } from "./actions";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -9,11 +10,28 @@ export default function AuthPage() {
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const submit = (e: React.FormEvent) => {
+  const changeTab = (next: "in" | "up") => {
+    setTab(next);
+    setError(null);
+  };
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Temporal: se conecta a los Server Actions reales (iniciarSesion / crearCuenta) en el Paso 5.
-    router.push("/biblioteca");
+    setError(null);
+    setSending(true);
+
+    const result =
+      tab === "in" ? await iniciarSesion(email, pass) : await crearCuenta(user, email, pass);
+
+    if (result.ok) {
+      router.push("/biblioteca");
+    } else {
+      setError(result.error);
+      setSending(false);
+    }
   };
 
   return (
@@ -36,30 +54,30 @@ export default function AuthPage() {
         </div>
 
         <div className="auth-tabs">
-          <button className={tab === "in" ? "on" : ""} onClick={() => setTab("in")}>
+          <button className={tab === "in" ? "on" : ""} onClick={() => changeTab("in")}>
             INICIAR SESIÓN
           </button>
-          <button className={tab === "up" ? "on" : ""} onClick={() => setTab("up")}>
+          <button className={tab === "up" ? "on" : ""} onClick={() => changeTab("up")}>
             CREAR CUENTA
           </button>
         </div>
 
         <form onSubmit={submit}>
-          <div className="field">
-            <label>Usuario</label>
-            <input value={user} onChange={(e) => setUser(e.target.value)} placeholder="px_kai" />
-          </div>
           {tab === "up" && (
             <div className="field slide-in">
-              <label>Correo electrónico</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="jugador@vault.gg"
-              />
+              <label>Usuario</label>
+              <input value={user} onChange={(e) => setUser(e.target.value)} placeholder="px_kai" />
             </div>
           )}
+          <div className="field">
+            <label>Correo electrónico</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="jugador@vault.gg"
+            />
+          </div>
           <div className="field">
             <label>Contraseña</label>
             <input
@@ -70,9 +88,32 @@ export default function AuthPage() {
             />
           </div>
 
-          <button className="btn lg" type="submit" style={{ width: "100%", marginTop: 8 }}>
-            {tab === "in" ? "ENTRAR AL VAULT" : "CREAR Y JUGAR"}
+          <button
+            className="btn lg"
+            type="submit"
+            disabled={sending}
+            style={{ width: "100%", marginTop: 8 }}
+          >
+            {sending ? (
+              <>
+                <span className="spinner" aria-hidden="true"></span>{" "}
+                {tab === "in" ? "ENTRANDO…" : "CREANDO CUENTA…"}
+              </>
+            ) : tab === "in" ? (
+              "ENTRAR AL VAULT"
+            ) : (
+              "CREAR Y JUGAR"
+            )}
           </button>
+          {error && (
+            <div
+              className="pixel neon-magenta"
+              role="alert"
+              style={{ fontSize: 10, marginTop: 14, letterSpacing: "0.06em" }}
+            >
+              ⚠ {error}
+            </div>
+          )}
         </form>
 
         <button
