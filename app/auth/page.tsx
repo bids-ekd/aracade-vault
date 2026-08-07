@@ -28,7 +28,16 @@ export default function AuthPage() {
       tab === "in" ? await iniciarSesion(email, pass) : await crearCuenta(user, email, pass);
 
     if (result.ok) {
-      router.push("/biblioteca");
+      if (tab === "in") {
+        // Navegación completa: iniciarSesion corre en el server y establece la
+        // sesión vía cookies; el cliente browser (UserProvider) recién se entera
+        // de la sesión nueva al reinicializarse, no con una navegación soft.
+        window.location.href = "/biblioteca";
+      } else {
+        // crearCuenta no deja sesión activa (falta confirmar el email), así que
+        // no hay estado de auth que sincronizar y la navegación soft es segura.
+        router.push("/biblioteca");
+      }
     } else {
       setError(result.error);
       setSending(false);

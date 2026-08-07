@@ -23,7 +23,12 @@ export function GamePlayer({ game }: { game: Game }) {
   const [lives] = useState(3);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
-  const [name, setName] = useState(user ? user.name : "INVITADO");
+  // user resuelve de forma asíncrona (sesión real de Supabase). En vez de
+  // capturar un valor fijo con useState (que se congelaría en "INVITADO" si
+  // todavía no había resuelto al montar), el nombre se deriva en cada render
+  // y solo se guarda localmente si el jugador edita sus iniciales a mano.
+  const [nameOverride, setNameOverride] = useState<string | null>(null);
+  const name = nameOverride ?? (user ? user.name : "INVITADO");
   const [saved, setSaved] = useState(false);
   const level = 1 + Math.floor(score / 2500);
 
@@ -124,7 +129,7 @@ export function GamePlayer({ game }: { game: Game }) {
               <div className="input-row">
                 <input
                   value={name}
-                  onChange={(e) => setName(e.target.value.toUpperCase().slice(0, 10))}
+                  onChange={(e) => setNameOverride(e.target.value.toUpperCase().slice(0, 10))}
                   placeholder="TUS INICIALES"
                 />
                 <button
