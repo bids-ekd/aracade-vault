@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { crearCuenta, iniciarSesion } from "./actions";
@@ -112,6 +113,17 @@ export default function AuthPage() {
               style={{ fontSize: 10, marginTop: 14, letterSpacing: "0.06em" }}
             >
               ⚠ {error}
+            </div>
+          )}
+          {tab === "in" && (
+            <div style={{ textAlign: "center", marginTop: 14 }}>
+              <Link
+                href="/auth/recuperar"
+                className="mono"
+                style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.06em" }}
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
           )}
         </form>

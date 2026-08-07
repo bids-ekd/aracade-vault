@@ -69,3 +69,46 @@ export async function crearCuenta(
     return { ok: false, error: GENERIC_ERROR };
   }
 }
+
+export async function enviarCorreoRecuperacion(email: string): Promise<AuthActionResult> {
+  const trimmedEmail = email?.trim() ?? "";
+
+  if (!trimmedEmail) {
+    return { ok: false, error: "Completa el campo de correo electrónico." };
+  }
+  if (!EMAIL_RE.test(trimmedEmail)) {
+    return { ok: false, error: "El correo electrónico no es válido." };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail);
+
+    if (error) {
+      return { ok: false, error: GENERIC_ERROR };
+    }
+
+    return { ok: true };
+  } catch {
+    return { ok: false, error: GENERIC_ERROR };
+  }
+}
+
+export async function actualizarContrasena(password: string): Promise<AuthActionResult> {
+  if (!password) {
+    return { ok: false, error: "Completa el campo de contraseña." };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.updateUser({ password });
+
+    if (error) {
+      return { ok: false, error: GENERIC_ERROR };
+    }
+
+    return { ok: true };
+  } catch {
+    return { ok: false, error: GENERIC_ERROR };
+  }
+}
