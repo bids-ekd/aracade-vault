@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import { AsteroidsCanvas } from "@/components/games/asteroids/asteroids-canvas";
 import { useUser } from "@/components/user-provider";
 import type { Game } from "@/lib/data";
+import { getOrCreateGuestId } from "@/lib/guest-id";
+import { guardarPuntuacionAsteroides } from "@/lib/supabase/score-actions";
 
 const SCORES_STORAGE_KEY = "av_scores";
 
@@ -35,7 +37,13 @@ export function GamePlayer({ game }: { game: Game }) {
   // y solo se guarda localmente si el jugador edita sus iniciales a mano.
   const [nameOverride, setNameOverride] = useState<string | null>(null);
   const name = nameOverride ?? (user ? user.name : "INVITADO");
+  // Solo ASTEROIDES persiste en Supabase; ahí, con sesión iniciada el nombre
+  // deja de ser editable (se guarda con el display_name de la cuenta). El
+  // resto del catálogo (mock, localStorage) sigue siendo editable siempre.
+  const nameIsEditable = !(isRealEngine && user);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   // Para el resto del catálogo (simulado) el nivel sigue derivándose del score,
   // tal como antes; ASTEROIDES lo recibe en vivo del motor vía onStateChange.
   const displayLevel = isRealEngine ? level : 1 + Math.floor(score / 2500);
@@ -69,7 +77,29 @@ export function GamePlayer({ game }: { game: Game }) {
     setPaused(false);
     setOver(false);
     setSaved(false);
+    setSaving(false);
+    setSaveError(null);
     if (isRealEngine) setResetToken((t) => t + 1);
+  };
+
+  const handleSaveScore = async () => {
+    if (!isRealEngine) {
+      saveScore({ game: game.id, score, name });
+      setSaved(true);
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+    const guestId = user ? null : getOrCreateGuestId();
+    const result = await guardarPuntuacionAsteroides({ score, playerName: name, guestId });
+    setSaving(false);
+
+    if (result.ok) {
+      setSaved(true);
+    } else {
+      setSaveError(result.error);
+    }
   };
 
   return (
@@ -163,22 +193,28 @@ export function GamePlayer({ game }: { game: Game }) {
             <div className="final-label">PUNTUACIÓN FINAL</div>
             <div className="final">{score.toLocaleString("es-ES")}</div>
             {!saved ? (
-              <div className="input-row">
-                <input
-                  value={name}
-                  onChange={(e) => setNameOverride(e.target.value.toUpperCase().slice(0, 10))}
-                  placeholder="TUS INICIALES"
-                />
-                <button
-                  className="btn yellow"
-                  onClick={() => {
-                    saveScore({ game: game.id, score, name });
-                    setSaved(true);
-                  }}
-                >
-                  GUARDAR PUNTUACIÓN
-                </button>
-              </div>
+              <>
+                <div className="input-row">
+                  <input
+                    value={name}
+                    readOnly={!nameIsEditable}
+                    onChange={
+                      nameIsEditable
+                        ? (e) => setNameOverride(e.target.value.toUpperCase().slice(0, 10))
+                        : undefined
+                    }
+                    placeholder="TUS INICIALES"
+                  />
+                  <button className="btn yellow" onClick={handleSaveScore} disabled={saving}>
+                    {saving ? "GUARDANDO…" : "GUARDAR PUNTUACIÓN"}
+                  </button>
+                </div>
+                {saveError && (
+                  <div className="mono" style={{ color: "var(--magenta)", fontSize: 11 }}>
+                    ▸ {saveError}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>
             )}
