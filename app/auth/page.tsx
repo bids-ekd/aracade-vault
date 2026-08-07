@@ -2,11 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useUser } from "@/components/user-provider";
 
 export default function AuthPage() {
   const router = useRouter();
-  const { login } = useUser();
   const [tab, setTab] = useState<"in" | "up">("in");
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
@@ -14,7 +12,7 @@ export default function AuthPage() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    login({ name: (user || "PLAYER1").toUpperCase().slice(0, 10) });
+    // Temporal: se conecta a los Server Actions reales (iniciarSesion / crearCuenta) en el Paso 5.
     router.push("/biblioteca");
   };
 

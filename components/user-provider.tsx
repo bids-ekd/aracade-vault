@@ -1,68 +1,49 @@
 "use client";
 
-import { createContext, useContext, useSyncExternalStore } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
-export type StoredUser = { name: string } | null;
+export type AuthUser = { name: string; email: string } | null;
 
 type UserContextValue = {
-  user: StoredUser;
-  login: (user: StoredUser) => void;
-  logout: () => void;
+  user: AuthUser;
+  loading: boolean;
+  logout: () => Promise<void>;
 };
 
 const UserContext = createContext<UserContextValue | null>(null);
 
-const STORAGE_KEY = "av_user";
-
-const listeners = new Set<() => void>();
-let cachedUser: StoredUser = null;
-let cacheInitialized = false;
-
-function readStoredUser(): StoredUser {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-  } catch {
-    return null;
-  }
-}
-
-function getSnapshot(): StoredUser {
-  if (!cacheInitialized) {
-    cachedUser = readStoredUser();
-    cacheInitialized = true;
-  }
-  return cachedUser;
-}
-
-function getServerSnapshot(): StoredUser {
-  return null;
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-function setStoredUser(user: StoredUser) {
-  cachedUser = user;
-  cacheInitialized = true;
-  try {
-    if (user) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  } catch {}
-  listeners.forEach((listener) => listener());
-}
-
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const user = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [user, setUser] = useState<AuthUser>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (nextUser: StoredUser) => setStoredUser(nextUser);
-  const logout = () => setStoredUser(null);
+  useEffect(() => {
+    const supabase = createClient();
 
-  return <UserContext.Provider value={{ user, login, logout }}>{children}</UserContext.Provider>;
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const sessionUser = session?.user ?? null;
+      setUser(
+        sessionUser
+          ? {
+              name:
+                (sessionUser.user_metadata?.display_name as string | undefined) ??
+                sessionUser.email!,
+              email: sessionUser.email!,
+            }
+          : null,
+      );
+      setLoading(false);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const logout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+  };
+
+  return <UserContext.Provider value={{ user, loading, logout }}>{children}</UserContext.Provider>;
 }
 
 export function useUser() {
