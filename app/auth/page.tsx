@@ -1,21 +1,47 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useUser } from "@/components/user-provider";
+import { crearCuenta, iniciarSesion } from "./actions";
 
 export default function AuthPage() {
   const router = useRouter();
-  const { login } = useUser();
   const [tab, setTab] = useState<"in" | "up">("in");
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const submit = (e: React.FormEvent) => {
+  const changeTab = (next: "in" | "up") => {
+    setTab(next);
+    setError(null);
+  };
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login({ name: (user || "PLAYER1").toUpperCase().slice(0, 10) });
-    router.push("/biblioteca");
+    setError(null);
+    setSending(true);
+
+    const result =
+      tab === "in" ? await iniciarSesion(email, pass) : await crearCuenta(user, email, pass);
+
+    if (result.ok) {
+      if (tab === "in") {
+        // Navegación completa: iniciarSesion corre en el server y establece la
+        // sesión vía cookies; el cliente browser (UserProvider) recién se entera
+        // de la sesión nueva al reinicializarse, no con una navegación soft.
+        window.location.href = "/biblioteca";
+      } else {
+        // crearCuenta no deja sesión activa (falta confirmar el email), así que
+        // no hay estado de auth que sincronizar y la navegación soft es segura.
+        router.push("/biblioteca");
+      }
+    } else {
+      setError(result.error);
+      setSending(false);
+    }
   };
 
   return (
@@ -38,30 +64,30 @@ export default function AuthPage() {
         </div>
 
         <div className="auth-tabs">
-          <button className={tab === "in" ? "on" : ""} onClick={() => setTab("in")}>
+          <button className={tab === "in" ? "on" : ""} onClick={() => changeTab("in")}>
             INICIAR SESIÓN
           </button>
-          <button className={tab === "up" ? "on" : ""} onClick={() => setTab("up")}>
+          <button className={tab === "up" ? "on" : ""} onClick={() => changeTab("up")}>
             CREAR CUENTA
           </button>
         </div>
 
         <form onSubmit={submit}>
-          <div className="field">
-            <label>Usuario</label>
-            <input value={user} onChange={(e) => setUser(e.target.value)} placeholder="px_kai" />
-          </div>
           {tab === "up" && (
             <div className="field slide-in">
-              <label>Correo electrónico</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="jugador@vault.gg"
-              />
+              <label>Usuario</label>
+              <input value={user} onChange={(e) => setUser(e.target.value)} placeholder="px_kai" />
             </div>
           )}
+          <div className="field">
+            <label>Correo electrónico</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="jugador@vault.gg"
+            />
+          </div>
           <div className="field">
             <label>Contraseña</label>
             <input
@@ -72,9 +98,43 @@ export default function AuthPage() {
             />
           </div>
 
-          <button className="btn lg" type="submit" style={{ width: "100%", marginTop: 8 }}>
-            {tab === "in" ? "ENTRAR AL VAULT" : "CREAR Y JUGAR"}
+          <button
+            className="btn lg"
+            type="submit"
+            disabled={sending}
+            style={{ width: "100%", marginTop: 8 }}
+          >
+            {sending ? (
+              <>
+                <span className="spinner" aria-hidden="true"></span>{" "}
+                {tab === "in" ? "ENTRANDO…" : "CREANDO CUENTA…"}
+              </>
+            ) : tab === "in" ? (
+              "ENTRAR AL VAULT"
+            ) : (
+              "CREAR Y JUGAR"
+            )}
           </button>
+          {error && (
+            <div
+              className="pixel neon-magenta"
+              role="alert"
+              style={{ fontSize: 10, marginTop: 14, letterSpacing: "0.06em" }}
+            >
+              ⚠ {error}
+            </div>
+          )}
+          {tab === "in" && (
+            <div style={{ textAlign: "center", marginTop: 14 }}>
+              <Link
+                href="/auth/recuperar"
+                className="mono"
+                style={{ fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.06em" }}
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+          )}
         </form>
 
         <button

@@ -52,8 +52,8 @@ export function Nav() {
         {user ? (
           <button
             className="btn ghost auth-btn"
-            onClick={() => {
-              logout();
+            onClick={async () => {
+              await logout();
               router.push("/");
             }}
           >
