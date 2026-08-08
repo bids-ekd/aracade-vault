@@ -857,6 +857,36 @@ a {
   text-shadow: 0 0 8px var(--cyan);
 }
 
+.cover-arkanoid {
+  background: linear-gradient(165deg, #22001c, #06000a 55%, #000);
+}
+.cover-arkanoid::before {
+  content: "";
+  position: absolute;
+  inset: 10% 12% 40% 12%;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 18%, rgba(0, 0, 0, 0.5) 18% 20%),
+    repeating-linear-gradient(
+      90deg,
+      red 0 16.66%,
+      yellow 16.66% 33.32%,
+      cyan 33.32% 49.98%,
+      var(--magenta) 49.98% 66.64%,
+      hotpink 66.64% 83.3%,
+      green 83.3% 100%
+    );
+  filter: drop-shadow(0 0 8px rgba(255, 0, 110, 0.4));
+}
+.cover-arkanoid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 46% 84%, #fff 0 5px, transparent 6px),
+    linear-gradient(var(--magenta), var(--magenta)) 36% 91% / 26% 4% no-repeat;
+  filter: drop-shadow(0 0 8px rgba(255, 0, 110, 0.55));
+}
+
 /* ===== detail screen ===== */
 .av-detail {
   display: grid;
