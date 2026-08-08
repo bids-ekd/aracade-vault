@@ -799,6 +799,37 @@ a {
   filter: drop-shadow(0 0 6px rgba(0, 245, 255, 0.4));
 }
 
+.cover-tetris {
+  background: linear-gradient(160deg, #001a22, #010a14 60%, #000);
+}
+.cover-tetris::before {
+  content: "";
+  position: absolute;
+  inset: 10% 33% 4% 33%;
+  border-left: 3px solid rgba(0, 245, 255, 0.35);
+  border-right: 3px solid rgba(0, 245, 255, 0.35);
+  border-bottom: 3px solid rgba(0, 245, 255, 0.35);
+}
+.cover-tetris::after {
+  content: "";
+  position: absolute;
+  inset: 46% 33% 4% 33%;
+  background:
+    linear-gradient(#e8feff, #e8feff) 0 0/25% 33.33%,
+    linear-gradient(#00f5ff, #00f5ff) 25% 0/25% 33.33%,
+    linear-gradient(#0891a3, #0891a3) 50% 0/50% 33.33%,
+    linear-gradient(#045a66, #045a66) 0 33.33%/25% 33.33%,
+    linear-gradient(#00f5ff, #00f5ff) 25% 33.33%/25% 33.33%,
+    linear-gradient(#0891a3, #0891a3) 50% 33.33%/25% 33.33%,
+    linear-gradient(#045a66, #045a66) 75% 33.33%/25% 33.33%,
+    linear-gradient(#00f5ff, #00f5ff) 0 66.66%/50% 33.34%,
+    linear-gradient(#0891a3, #0891a3) 50% 66.66%/25% 33.34%,
+    linear-gradient(#045a66, #045a66) 75% 66.66%/25% 33.34%;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 0 8px rgba(0, 245, 255, 0.45));
+  image-rendering: pixelated;
+}
+
 .cover-asteroides {
   background: linear-gradient(145deg, #001824, #04001a 55%, #000);
 }
@@ -1005,6 +1036,10 @@ a {
 .hud-stat.level .v {
   color: var(--yellow);
   text-shadow: 0 0 6px rgba(245, 255, 0, 0.5);
+}
+.hud-stat.lines .v {
+  color: var(--green);
+  text-shadow: 0 0 6px rgba(0, 255, 136, 0.5);
 }
 .hud-actions {
   display: flex;
