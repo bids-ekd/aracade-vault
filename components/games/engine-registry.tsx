@@ -32,6 +32,9 @@ const GAME_ENGINES: Record<RealGameSlug, ComponentType<GameCanvasProps>> = {
   tetris: dynamic(() =>
     import("@/components/games/tetris/tetris-canvas").then((m) => m.TetrisCanvas),
   ),
+  arkanoid: dynamic(() =>
+    import("@/components/games/arkanoid/arkanoid-canvas").then((m) => m.ArkanoidCanvas),
+  ),
 };
 
 // GAME_ENGINES es un objeto de nivel de módulo: para un slug dado, siempre

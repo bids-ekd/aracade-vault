@@ -11,7 +11,7 @@
 // components/games/engine-registry.ts. Olvidar la segunda es un error de
 // compilación (Record<RealGameSlug, …> exige la clave), no una sorpresa en
 // runtime.
-export const REAL_GAME_SLUGS = ["asteroides", "tetris"] as const;
+export const REAL_GAME_SLUGS = ["asteroides", "tetris", "arkanoid"] as const;
 
 export type RealGameSlug = (typeof REAL_GAME_SLUGS)[number];
 
