@@ -1,6 +1,6 @@
 # SPEC 09 — Arkanoid (juego real)
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** [05-asteroides-juego-real](./05-asteroides-juego-real.md), [06-tabla-juegos-supabase](./06-tabla-juegos-supabase.md), [07-leaderboard-asteroides](./07-leaderboard-asteroides.md), [08-tetris](./08-tetris.md)
 > **Date:** 2026-08-08
 > **Objective:** Portar el juego de Arkanoid de `references/started-games/04-arkanoid/` (canvas HTML5 vanilla con spritesheet y audio) a un motor + componente React/Next.js real en `components/games/arkanoid/`, agregado vía el registro genérico de motores reales (`lib/games/registry.ts` + `components/games/engine-registry.tsx`), con gráficos redibujados en vectorial, sonido portado y leaderboard real en Supabase.
@@ -120,22 +120,24 @@ values (
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] La tabla `games` de Supabase tiene una fila nueva `arkanoid` con los valores acordados, verificada vía `execute_sql`.
-- [ ] `/biblioteca` muestra una ficha nueva "ARKANOID" (portada `.cover-arkanoid`, acento magenta), separada de "BLOQUE BUSTER", que sigue existiendo sin cambios como mock.
-- [ ] `/juego/arkanoid` (detalle) muestra el copy aprobado, la etiqueta "TECLADO" y la sección "MEJORES PUNTUACIONES" con datos reales de Supabase.
-- [ ] `/juego/arkanoid/jugar` renderiza el canvas real: paddle controlable con `←`/`→` y con el mouse, pelota que rebota en paredes/paddle (con sonido), bloques que se rompen (+10 pts, sonido, animación de explosión vectorial), los 5 niveles con los patrones del original y velocidad creciente (×1.00 → ×1.46).
-- [ ] El HUD dentro del canvas (SCORE/NIVEL/vidas) se ve durante toda la partida, sincronizado con el HUD externo de la plataforma (Puntuación/Vidas/Nivel).
-- [ ] No existe ningún selector de nivel por click ni atajo `P`/`Escape` — la pausa es exclusivamente el botón de la plataforma.
-- [ ] El botón "PAUSA" congela el juego por completo (nada se mueve, ni teclado ni mouse responden); "REANUDAR" retoma sin saltos bruscos.
-- [ ] El botón "FIN" fuerza el fin de partida inmediatamente con el score acumulado.
-- [ ] Al llegar a 0 vidas, se abre el modal de fin de partida con copy de derrota (`status: "gameover"`).
-- [ ] Al superar el nivel 5, se abre el mismo modal de fin de partida con copy de victoria (`status: "won"`) — primer juego del Vault que ejercita ese estado.
-- [ ] Desde el modal, "GUARDAR PUNTUACIÓN" persiste el score real en Supabase (tabla `scores`, `game_id` de `arkanoid`) tanto tras derrota como tras victoria, respetando el rate-limit de 10s y las reglas de identidad (sesión o invitado).
-- [ ] "JUGAR DE NUEVO" arranca una partida nueva desde cero (score 0, 3 vidas, nivel 1, campo del nivel 1), remontando el motor vía `key={resetToken}`.
-- [ ] `/salon` muestra un tab "ARKANOID" con podio y tabla de datos reales de Supabase, igual que "ASTEROIDES"/"TETRIS"; el resto de los tabs (incluido `bloque-buster`, mock) sigue exactamente igual.
-- [ ] Los sonidos de rebote/rotura suenan únicamente en `arkanoid`; ningún otro juego del catálogo se ve afectado por los cambios de este spec.
-- [ ] No hay regresiones en ningún otro juego del catálogo (`bloque-buster`, `asteroides`, `tetris` y el resto de los mock).
+- [x] `npm run build` y `npm run lint` terminan sin errores.
+- [x] La tabla `games` de Supabase tiene una fila nueva `arkanoid` con los valores acordados, verificada vía `execute_sql`.
+- [x] `/biblioteca` muestra una ficha nueva "ARKANOID" (portada `.cover-arkanoid`, acento magenta), separada de "BLOQUE BUSTER", que sigue existiendo sin cambios como mock.
+- [x] `/juego/arkanoid` (detalle) muestra el copy aprobado, la etiqueta "TECLADO" y la sección "MEJORES PUNTUACIONES" con datos reales de Supabase.
+- [x] `/juego/arkanoid/jugar` renderiza el canvas real: paddle controlable con `←`/`→` y con el mouse, pelota que rebota en paredes/paddle (con sonido), bloques que se rompen (+10 pts, sonido, animación de explosión vectorial), los 5 niveles con los patrones del original y velocidad creciente (×1.00 → ×1.46). [^1]
+- [x] El HUD dentro del canvas (SCORE/NIVEL/vidas) se ve durante toda la partida, sincronizado con el HUD externo de la plataforma (Puntuación/Vidas/Nivel).
+- [x] No existe ningún selector de nivel por click ni atajo `P`/`Escape` — la pausa es exclusivamente el botón de la plataforma.
+- [x] El botón "PAUSA" congela el juego por completo (nada se mueve, ni teclado ni mouse responden); "REANUDAR" retoma sin saltos bruscos.
+- [x] El botón "FIN" fuerza el fin de partida inmediatamente con el score acumulado.
+- [x] Al llegar a 0 vidas, se abre el modal de fin de partida con copy de derrota (`status: "gameover"`).
+- [x] Al superar el nivel 5, se abre el mismo modal de fin de partida con copy de victoria (`status: "won"`) — primer juego del Vault que ejercita ese estado. [^1]
+- [x] Desde el modal, "GUARDAR PUNTUACIÓN" persiste el score real en Supabase (tabla `scores`, `game_id` de `arkanoid`) tanto tras derrota como tras victoria, respetando el rate-limit de 10s y las reglas de identidad (sesión o invitado). [^1]
+- [x] "JUGAR DE NUEVO" arranca una partida nueva desde cero (score 0, 3 vidas, nivel 1, campo del nivel 1), remontando el motor vía `key={resetToken}`.
+- [x] `/salon` muestra un tab "ARKANOID" con podio y tabla de datos reales de Supabase, igual que "ASTEROIDES"/"TETRIS"; el resto de los tabs (incluido `bloque-buster`, mock) sigue exactamente igual.
+- [x] Los sonidos de rebote/rotura suenan únicamente en `arkanoid`; ningún otro juego del catálogo se ve afectado por los cambios de este spec.
+- [x] No hay regresiones en ningún otro juego del catálogo (`bloque-buster`, `asteroides`, `tetris` y el resto de los mock).
+
+[^1]: Las partes específicas de **superar los 5 niveles / `status: "won"` / guardado tras victoria** se verificaron con un script aislado que condujo `ArkanoidEngine` con física real (sin tocar estado privado) hasta limpiar los 5 niveles y confirmar la transición a `"won"`, más revisión de código del ternario del modal y de `guardarPuntuacion` (idéntico sin importar el `status`) — decisión explícita del usuario para no invertir ~5-10 min de tiempo real jugando los 5 niveles vía automatización de browser. El resto de cada criterio (controles, sonido, explosión, derrota, guardado tras derrota, JUGAR DE NUEVO, etc.) sí se verificó jugando partidas reales en el navegador.
 
 ## Decisions
 
