@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@/components/user-provider";
 import { seededScores, type Game } from "@/lib/data";
+import { hasRealEngine } from "@/lib/games/registry";
 import { getOrCreateGuestId } from "@/lib/guest-id";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -22,10 +23,11 @@ export function SalonHall({ games }: { games: Game[] }) {
   const { user } = useUser();
   const [tab, setTab] = useState(games[0].id);
   const game = games.find((g) => g.id === tab)!;
-  // Único juego con leaderboard real hoy (ver SPEC 07) — mismo criterio que
-  // components/game-player.tsx (`isRealEngine`). El resto del catálogo sigue
-  // con seededScores() mock, sin ningún cambio.
-  const isAsteroides = game.controls === "teclado";
+  // Cualquier juego con motor real (ver lib/games/registry.ts) tiene
+  // leaderboard real — mismo criterio que components/game-player.tsx
+  // (`isRealEngine`). El resto del catálogo sigue con seededScores() mock,
+  // sin ningún cambio.
+  const hasRealLeaderboard = hasRealEngine(game.id);
 
   const mockRows = useMemo(() => seededScores(tab.length * 23 + 7, 12), [tab]);
 
@@ -40,7 +42,7 @@ export function SalonHall({ games }: { games: Game[] }) {
   } | null>(null);
 
   useEffect(() => {
-    if (!isAsteroides) return;
+    if (!hasRealLeaderboard) return;
     let cancelled = false;
 
     const supabase = createClient();
@@ -57,14 +59,14 @@ export function SalonHall({ games }: { games: Game[] }) {
     return () => {
       cancelled = true;
     };
-  }, [isAsteroides, tab, user]);
+  }, [hasRealLeaderboard, tab, user]);
 
   const dataForTab = realData?.tab === tab ? realData : null;
-  const loadingReal = isAsteroides && !dataForTab;
+  const loadingReal = hasRealLeaderboard && !dataForTab;
   const realRows = dataForTab?.rows ?? [];
   const myBest = dataForTab?.mine ?? null;
 
-  const rows: DisplayRow[] = isAsteroides
+  const rows: DisplayRow[] = hasRealLeaderboard
     ? realRows.map((r) => ({
         rank: r.rank,
         name: r.playerName,
@@ -76,10 +78,10 @@ export function SalonHall({ games }: { games: Game[] }) {
   // "TU MEJOR MARCA": en ASTEROIDES también para invitados (identidad estable
   // vía guest_id, ver SPEC 07); en el resto del catálogo sigue siendo
   // exclusiva de usuarios con sesión, sin cambios.
-  const showYouRow = isAsteroides ? myBest !== null : Boolean(user);
+  const showYouRow = hasRealLeaderboard ? myBest !== null : Boolean(user);
   const you = !showYouRow
     ? null
-    : isAsteroides
+    : hasRealLeaderboard
       ? {
           rank: myBest!.rank,
           score: myBest!.score,
@@ -116,14 +118,14 @@ export function SalonHall({ games }: { games: Game[] }) {
         ))}
       </div>
 
-      {isAsteroides && loadingReal ? (
+      {hasRealLeaderboard && loadingReal ? (
         <div
           className="mono"
           style={{ textAlign: "center", padding: "40px 0", color: "var(--ink-dim)" }}
         >
           CARGANDO PUNTUACIONES…
         </div>
-      ) : isAsteroides && rows.length === 0 ? (
+      ) : hasRealLeaderboard && rows.length === 0 ? (
         <div
           className="mono"
           style={{ textAlign: "center", padding: "40px 0", color: "var(--ink-dim)" }}

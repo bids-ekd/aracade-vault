@@ -2,17 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AsteroidsCanvas } from "@/components/games/asteroids/asteroids-canvas";
+import { getGameEngine, GameEngineSlot } from "@/components/games/engine-registry";
 import { useUser } from "@/components/user-provider";
 import type { Game } from "@/lib/data";
 import { getOrCreateGuestId } from "@/lib/guest-id";
-import {
-  guardarPuntuacionAsteroides,
-  migrarPuntuacionesLocales,
-} from "@/lib/supabase/score-actions";
+import type { GameEngineState } from "@/lib/games/types";
+import { guardarPuntuacion, migrarPuntuacionesLocales } from "@/lib/supabase/score-actions";
 
 const SCORES_STORAGE_KEY = "av_scores";
-const MIGRATION_FLAG_KEY = "av_scores_migrated_asteroides";
 
 type SavedScore = { game: string; score: number; name: string; at: number };
 
@@ -24,14 +21,42 @@ function saveScore(entry: { game: string; score: number; name: string }) {
   } catch {}
 }
 
+const INITIAL_ENGINE_STATE: GameEngineState = { score: 0, lives: 3, level: 1 };
+
+// Compara campo a campo antes de reemplazar el estado: onStateChange llega
+// ~60 veces por segundo, casi siempre con el mismo valor. Un objeto nuevo en
+// cada frame anularía el bail-out de re-render que React hace cuando el
+// estado no cambió (a diferencia de los setState primitivos que reemplazó).
+function engineStateEquals(a: GameEngineState, b: GameEngineState) {
+  return (
+    a.score === b.score &&
+    a.lives === b.lives &&
+    a.level === b.level &&
+    a.lines === b.lines &&
+    a.status === b.status
+  );
+}
+
 export function GamePlayer({ game }: { game: Game }) {
   const { user, loading: userLoading } = useUser();
-  // ASTEROIDES es, por ahora, el único juego con motor real: cuando `controls`
-  // es "teclado" se monta AsteroidsCanvas en vez de la simulación mock.
-  const isRealEngine = game.controls === "teclado";
-  const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(3);
-  const [level, setLevel] = useState(1);
+  // getGameEngine devuelve siempre la misma referencia de componente para un
+  // slug dado (ver components/games/engine-registry.ts): así React
+  // reconcilia el mismo tipo entre renders y nunca remonta el canvas. Se
+  // renderiza a través de <GameEngineSlot engine={Engine} .../> —no
+  // directamente <Engine .../>— porque el linter de React Compiler
+  // (react-hooks/static-components) no puede verificar que el resultado de
+  // una llamada a función sea un componente estable cuando se usa como tag
+  // JSX; como prop sí lo acepta.
+  const Engine = getGameEngine(game.id);
+  const isRealEngine = Engine !== undefined;
+  const [engineState, setEngineState] = useState<GameEngineState>(INITIAL_ENGINE_STATE);
+  const score = engineState.score;
+  // Para el resto del catálogo (simulado) vidas/nivel siguen fijos/derivados
+  // del score, tal como antes; un motor real los recibe en vivo vía
+  // onStateChange y puede omitir el que no le aplique (undefined oculta la
+  // tarjeta correspondiente del HUD, ver más abajo).
+  const lives = isRealEngine ? engineState.lives : 3;
+  const level = isRealEngine ? engineState.level : 1 + Math.floor(score / 2500);
   const [resetToken, setResetToken] = useState(0);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
@@ -41,36 +66,39 @@ export function GamePlayer({ game }: { game: Game }) {
   // y solo se guarda localmente si el jugador edita sus iniciales a mano.
   const [nameOverride, setNameOverride] = useState<string | null>(null);
   const name = nameOverride ?? (user ? user.name : "INVITADO");
-  // Solo ASTEROIDES persiste en Supabase; ahí, con sesión iniciada el nombre
-  // deja de ser editable (se guarda con el display_name de la cuenta). El
-  // resto del catálogo (mock, localStorage) sigue siendo editable siempre.
+  // Solo los juegos con motor real persisten en Supabase; ahí, con sesión
+  // iniciada el nombre deja de ser editable (se guarda con el display_name
+  // de la cuenta). El resto del catálogo (mock, localStorage) sigue siendo
+  // editable siempre.
   const nameIsEditable = !(isRealEngine && user);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  // Para el resto del catálogo (simulado) el nivel sigue derivándose del score,
-  // tal como antes; ASTEROIDES lo recibe en vivo del motor vía onStateChange.
-  const displayLevel = isRealEngine ? level : 1 + Math.floor(score / 2500);
 
   useEffect(() => {
     if (isRealEngine) return;
     if (over || paused) return;
-    const t = setInterval(() => setScore((s) => s + Math.floor(10 + Math.random() * 90)), 220);
+    const t = setInterval(
+      () => setEngineState((s) => ({ ...s, score: s.score + Math.floor(10 + Math.random() * 90) })),
+      220,
+    );
     return () => clearInterval(t);
   }, [isRealEngine, over, paused]);
 
-  // Migración automática y silenciosa del histórico de av_scores ("asteroides")
-  // a Supabase, una sola vez por navegador. Corre al montar esta pantalla (no
-  // depende de que el jugador termine una partida). `migrationAttempted`
-  // evita un doble intento concurrente (p. ej. el doble-invoke de efectos en
-  // desarrollo); si el intento falla, se libera para reintentar en el
-  // próximo montaje sin haber marcado el flag.
+  // Migración automática y silenciosa del histórico de av_scores de ESTE
+  // juego hacia Supabase, una sola vez por navegador (flag por juego:
+  // av_scores_migrated_<slug>). Corre al montar esta pantalla (no depende de
+  // que el jugador termine una partida). `migrationAttempted` evita un doble
+  // intento concurrente (p. ej. el doble-invoke de efectos en desarrollo); si
+  // el intento falla, se libera para reintentar en el próximo montaje sin
+  // haber marcado el flag.
+  const migrationFlagKey = `av_scores_migrated_${game.id}`;
   const migrationAttempted = useRef(false);
   useEffect(() => {
     if (!isRealEngine) return;
     if (userLoading) return;
     if (migrationAttempted.current) return;
-    if (localStorage.getItem(MIGRATION_FLAG_KEY) === "1") return;
+    if (localStorage.getItem(migrationFlagKey) === "1") return;
 
     let historial: SavedScore[];
     try {
@@ -79,17 +107,17 @@ export function GamePlayer({ game }: { game: Game }) {
       historial = [];
     }
     const entries = historial
-      .filter((entry) => entry.game === "asteroides")
+      .filter((entry) => entry.game === game.id)
       .map((entry) => ({ score: entry.score, name: entry.name, at: entry.at }));
 
     if (entries.length === 0) return;
 
     migrationAttempted.current = true;
     const guestId = user ? null : getOrCreateGuestId();
-    migrarPuntuacionesLocales(entries, guestId)
+    migrarPuntuacionesLocales(game.id, entries, guestId)
       .then((result) => {
         if (result.migrated > 0) {
-          localStorage.setItem(MIGRATION_FLAG_KEY, "1");
+          localStorage.setItem(migrationFlagKey, "1");
         } else {
           migrationAttempted.current = false;
         }
@@ -97,27 +125,20 @@ export function GamePlayer({ game }: { game: Game }) {
       .catch(() => {
         migrationAttempted.current = false;
       });
-  }, [isRealEngine, userLoading, user]);
+  }, [isRealEngine, userLoading, user, game.id, migrationFlagKey]);
 
-  const handleStateChange = useCallback(
-    (state: { score: number; lives: number; level: number }) => {
-      setScore(state.score);
-      setLives(state.lives);
-      setLevel(state.level);
-    },
-    [],
-  );
+  const handleStateChange = useCallback((next: GameEngineState) => {
+    setEngineState((prev) => (engineStateEquals(prev, next) ? prev : next));
+  }, []);
 
   const handleGameOver = useCallback((finalScore: number) => {
-    setScore(finalScore);
+    setEngineState((prev) => ({ ...prev, score: finalScore }));
     setOver(true);
   }, []);
 
   const endGame = () => setOver(true);
   const restart = () => {
-    setScore(0);
-    setLives(3);
-    setLevel(1);
+    setEngineState(INITIAL_ENGINE_STATE);
     setPaused(false);
     setOver(false);
     setSaved(false);
@@ -136,7 +157,7 @@ export function GamePlayer({ game }: { game: Game }) {
     setSaving(true);
     setSaveError(null);
     const guestId = user ? null : getOrCreateGuestId();
-    const result = await guardarPuntuacionAsteroides({ score, playerName: name, guestId });
+    const result = await guardarPuntuacion({ gameSlug: game.id, score, playerName: name, guestId });
     setSaving(false);
 
     if (result.ok) {
@@ -160,14 +181,18 @@ export function GamePlayer({ game }: { game: Game }) {
             <div className="l">Puntuación</div>
             <div className="v">{score.toLocaleString("es-ES")}</div>
           </div>
-          <div className="hud-stat lives">
-            <div className="l">Vidas</div>
-            <div className="v">{"♥ ".repeat(lives).trim() || "—"}</div>
-          </div>
-          <div className="hud-stat level">
-            <div className="l">Nivel</div>
-            <div className="v">{String(displayLevel).padStart(2, "0")}</div>
-          </div>
+          {lives !== undefined && (
+            <div className="hud-stat lives">
+              <div className="l">Vidas</div>
+              <div className="v">{"♥ ".repeat(lives).trim() || "—"}</div>
+            </div>
+          )}
+          {level !== undefined && (
+            <div className="hud-stat level">
+              <div className="l">Nivel</div>
+              <div className="v">{String(level).padStart(2, "0")}</div>
+            </div>
+          )}
         </div>
         <div className="hud-actions">
           <button className="btn yellow" onClick={() => setPaused((p) => !p)}>
@@ -185,9 +210,10 @@ export function GamePlayer({ game }: { game: Game }) {
       <div className="crt">
         <div className="crt-screen">
           <div className="game-arena">
-            {isRealEngine ? (
-              <AsteroidsCanvas
+            {Engine ? (
+              <GameEngineSlot
                 key={resetToken}
+                engine={Engine}
                 paused={paused || over}
                 onStateChange={handleStateChange}
                 onGameOver={handleGameOver}

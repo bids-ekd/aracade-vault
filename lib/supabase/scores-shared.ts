@@ -11,8 +11,6 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export const ASTEROIDES_SLUG = "asteroides";
-
 // Shape explícito de una fila a insertar en `scores`. Se anota a mano en vez
 // de dejar que TS infiera el tipo desde un objeto armado con ternarios: sin
 // esto, cada rama produce un literal distinto para `user_id`/`guest_id`

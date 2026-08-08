@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { seededScores } from "@/lib/data";
+import { hasRealEngine } from "@/lib/games/registry";
 import { getGameBySlug } from "@/lib/supabase/games";
 import { formatFecha, getMejoresPuntuaciones } from "@/lib/supabase/scores";
 import { createClient } from "@/lib/supabase/server";
@@ -10,11 +11,12 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
   const game = await getGameBySlug(id);
   if (!game) notFound();
 
-  // Único juego con leaderboard real hoy (ver SPEC 07) — mismo criterio que
-  // components/game-player.tsx y components/salon-hall.tsx. El resto del
-  // catálogo sigue con seededScores() mock, sin ningún cambio.
-  const isAsteroides = game.controls === "teclado";
-  const scores = isAsteroides
+  // Cualquier juego con motor real (ver lib/games/registry.ts) tiene
+  // leaderboard real en Supabase — mismo criterio que components/game-player.tsx
+  // y components/salon-hall.tsx. El resto del catálogo sigue con
+  // seededScores() mock, sin ningún cambio.
+  const hasRealLeaderboard = hasRealEngine(id);
+  const scores = hasRealLeaderboard
     ? (await getMejoresPuntuaciones(await createClient(), id, 10)).map((r) => ({
         rank: r.rank,
         name: r.playerName,
@@ -76,7 +78,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
       <aside>
         <div className="leaderboard">
           <h3>MEJORES PUNTUACIONES</h3>
-          {isAsteroides && scores.length === 0 && (
+          {hasRealLeaderboard && scores.length === 0 && (
             <div
               className="mono"
               style={{ fontSize: 11, color: "var(--ink-dim)", padding: "12px 0" }}
