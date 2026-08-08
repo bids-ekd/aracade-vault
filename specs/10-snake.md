@@ -1,6 +1,6 @@
 # SPEC 10 — Snake (juego real)
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** [05-asteroides-juego-real](./05-asteroides-juego-real.md), [06-tabla-juegos-supabase](./06-tabla-juegos-supabase.md), [07-leaderboard-asteroides](./07-leaderboard-asteroides.md), [08-tetris](./08-tetris.md), [09-arkanoid](./09-arkanoid.md)
 > **Date:** 2026-08-08
 > **Objective:** Construir Snake desde cero (sin `game.js` de referencia — solo un spritesheet de frutas provisto por el usuario en `references/sources-assets/05-snake-assets/`) como un motor + componente React/Next.js real en `components/games/snake/`, agregado vía el registro genérico de motores reales (`lib/games/registry.ts` + `components/games/engine-registry.tsx`), con comida renderizada usando sprites reales de fruta y leaderboard real en Supabase.
@@ -172,24 +172,24 @@ values (
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] La tabla `games` de Supabase tiene una fila nueva `snake` con los valores acordados, verificada vía `execute_sql`.
-- [ ] `/biblioteca` muestra una ficha nueva "SNAKE" (portada `.cover-snake-real`, acento verde), separada de "SERPENTINA", que sigue existiendo sin cambios como mock.
-- [ ] `/juego/snake` (detalle) muestra el copy aprobado, la etiqueta "TECLADO" y la sección "MEJORES PUNTUACIONES" con datos reales de Supabase.
-- [ ] `/juego/snake/jugar` renderiza el canvas real: la serpiente se mueve en grilla a tics fijos, gira con `←`/`→`/`↑`/`↓`, nunca puede invertir 180° sobre sí misma.
-- [ ] Cada fruta comida se dibuja con un sprite real del atlas (`fruits.png`), no una forma vectorial genérica; distintas frutas aparecen a lo largo de una partida (selección aleatoria entre las 22).
-- [ ] Comer una fruta suma +10 puntos, hace crecer un segmento a la serpiente y genera una fruta nueva en una celda vacía.
-- [ ] Cada 5 frutas comidas sube el nivel y el tick baja 50ms (con piso de 60ms) — la partida se siente perceptiblemente más rápida.
-- [ ] Tocar el borde del tablero termina la partida instantáneamente (`status: "gameover"`), sin wrap-around.
-- [ ] Chocar contra el propio cuerpo termina la partida instantáneamente (`status: "gameover"`).
-- [ ] El HUD dentro del canvas (SCORE/NIVEL) se ve durante toda la partida, sincronizado con el HUD externo de la plataforma (Puntuación/Nivel, sin tarjeta de Vidas).
-- [ ] El canvas no arranca el loop hasta que `fruits.png` termina de cargar (sin fotogramas con fruta rota/ausente al iniciar).
-- [ ] PAUSA congela el juego por completo (nada se mueve, el teclado no responde); REANUDAR retoma sin saltos bruscos.
-- [ ] El botón "FIN" fuerza el fin de partida inmediatamente con el score acumulado, abriendo el modal de fin de partida.
-- [ ] Desde el modal, "GUARDAR PUNTUACIÓN" persiste el score real en Supabase (tabla `scores`, `game_id` de `snake`), respetando el rate-limit de 10s y las reglas de identidad (sesión o invitado).
-- [ ] "JUGAR DE NUEVO" arranca una partida nueva desde cero (score 0, nivel 1, serpiente de 3 segmentos centrada), remontando el motor vía `key={resetToken}`.
-- [ ] `/salon` muestra un tab "SNAKE" con podio y tabla de datos reales de Supabase, igual que "ASTEROIDES"/"TETRIS"/"ARKANOID"; el resto de los tabs (incluido `serpentina`, mock) sigue exactamente igual.
-- [ ] No hay regresiones en ningún otro juego del catálogo (`serpentina`, `asteroides`, `tetris`, `arkanoid` y el resto de los mock).
+- [x] `npm run build` y `npm run lint` terminan sin errores.
+- [x] La tabla `games` de Supabase tiene una fila nueva `snake` con los valores acordados, verificada vía `execute_sql`.
+- [x] `/biblioteca` muestra una ficha nueva "SNAKE" (portada `.cover-snake-real`, acento verde), separada de "SERPENTINA", que sigue existiendo sin cambios como mock.
+- [x] `/juego/snake` (detalle) muestra el copy aprobado, la etiqueta "TECLADO" y la sección "MEJORES PUNTUACIONES" con datos reales de Supabase.
+- [x] `/juego/snake/jugar` renderiza el canvas real: la serpiente se mueve en grilla a tics fijos, gira con `←`/`→`/`↑`/`↓`, nunca puede invertir 180° sobre sí misma.
+- [x] Cada fruta comida se dibuja con un sprite real del atlas (`fruits.png`), no una forma vectorial genérica; distintas frutas aparecen a lo largo de una partida (selección aleatoria entre las 22).
+- [x] Comer una fruta suma +10 puntos, hace crecer un segmento a la serpiente y genera una fruta nueva en una celda vacía.
+- [x] Cada 5 frutas comidas sube el nivel y el tick baja 50ms (con piso de 60ms) — la partida se siente perceptiblemente más rápida.
+- [x] Tocar el borde del tablero termina la partida instantáneamente (`status: "gameover"`), sin wrap-around.
+- [x] Chocar contra el propio cuerpo termina la partida instantáneamente (`status: "gameover"`).
+- [x] El HUD dentro del canvas (SCORE/NIVEL) se ve durante toda la partida, sincronizado con el HUD externo de la plataforma (Puntuación/Nivel, sin tarjeta de Vidas).
+- [x] El canvas no arranca el loop hasta que `fruits.png` termina de cargar (sin fotogramas con fruta rota/ausente al iniciar).
+- [x] PAUSA congela el juego por completo (nada se mueve, el teclado no responde); REANUDAR retoma sin saltos bruscos.
+- [x] El botón "FIN" fuerza el fin de partida inmediatamente con el score acumulado, abriendo el modal de fin de partida.
+- [x] Desde el modal, "GUARDAR PUNTUACIÓN" persiste el score real en Supabase (tabla `scores`, `game_id` de `snake`), respetando el rate-limit de 10s y las reglas de identidad (sesión o invitado).
+- [x] "JUGAR DE NUEVO" arranca una partida nueva desde cero (score 0, nivel 1, serpiente de 3 segmentos centrada), remontando el motor vía `key={resetToken}`.
+- [x] `/salon` muestra un tab "SNAKE" con podio y tabla de datos reales de Supabase, igual que "ASTEROIDES"/"TETRIS"/"ARKANOID"; el resto de los tabs (incluido `serpentina`, mock) sigue exactamente igual.
+- [x] No hay regresiones en ningún otro juego del catálogo (`serpentina`, `asteroides`, `tetris`, `arkanoid` y el resto de los mock).
 
 ## Decisions
 
