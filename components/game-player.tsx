@@ -269,7 +269,7 @@ export function GamePlayer({ game }: { game: Game }) {
       {over && (
         <div className="modal-bd">
           <div className="modal">
-            <h2>FIN DEL JUEGO</h2>
+            <h2>{engineState.status === "won" ? "¡VICTORIA!" : "FIN DEL JUEGO"}</h2>
             <div className="final-label">PUNTUACIÓN FINAL</div>
             <div className="final">{score.toLocaleString("es-ES")}</div>
             {!saved ? (
