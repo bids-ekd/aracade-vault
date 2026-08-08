@@ -1,6 +1,6 @@
 # SPEC 07 — Leaderboard real de Asteroides
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** [06-tabla-juegos-supabase](./06-tabla-juegos-supabase.md), [04-supabase-auth](./04-supabase-auth.md)
 > **Date:** 2026-08-07
 > **Objective:** Reemplazar el leaderboard mock de `asteroides` — en `/salon` y en la ficha de detalle `/juego/asteroides` — por puntuaciones reales persistidas en una tabla `scores` de Supabase, con identidad estable por jugador (cuenta o invitado), controles anti-abuso (rango de score, rate-limit, RLS) y migración automática del histórico ya guardado en `localStorage`, dejando el resto del catálogo (8 juegos) con su leaderboard mock intacto.
@@ -159,21 +159,21 @@ Flag de migración en el navegador: `localStorage["av_scores_migrated_asteroides
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] La tabla `scores` existe en Supabase con RLS habilitado, policy de lectura pública, policies de escritura separadas para `authenticated`/`anon`, y el trigger de rate-limit activo.
-- [ ] Un insert con `user_id` distinto al del usuario autenticado (`auth.uid()`) falla por RLS.
-- [ ] Un insert como `anon` sin `guest_id` (o con `user_id`) falla por RLS.
-- [ ] Un insert con `score` fuera del rango `0–2.000.000` falla por el `CHECK`.
-- [ ] Guardar dos puntuaciones (`origin='game_over'`) del mismo jugador en el mismo juego dentro de 10 segundos: la segunda es rechazada por el trigger de rate-limit.
-- [ ] Jugar `asteroides` como invitado, terminar la partida y guardar la puntuación la persiste en Supabase asociada a un `guest_id` estable en `localStorage` (no editable ahí, pero el nombre sí).
-- [ ] Jugar `asteroides` con sesión iniciada, terminar la partida y guardar la puntuación la persiste en Supabase asociada al `user_id` de la cuenta, con el campo de nombre no editable (usa el `display_name` de la cuenta).
-- [ ] `/salon`, tab "ASTEROIDES", muestra el podio y la tabla con datos reales de Supabase — una fila por jugador, su mejor score.
-- [ ] `/salon`, tab "ASTEROIDES", muestra la fila "TU MEJOR MARCA" tanto para un usuario autenticado como para un invitado que ya guardó al menos una puntuación.
-- [ ] `/salon`, el resto de los tabs (8 juegos) sigue mostrando exactamente los mismos datos mock (`seededScores()`) que antes de este spec.
-- [ ] `/juego/asteroides` (detalle), la sección "MEJORES PUNTUACIONES" muestra datos reales de Supabase.
-- [ ] `/juego/<resto-del-catálogo>` (detalle) sigue mostrando `seededScores()` mock, sin cambios.
-- [ ] Al cargar la app con entradas previas de `av_scores` (`game: "asteroides"`) en `localStorage`, esas puntuaciones aparecen en Supabase (`origin: "migration"`) sin intervención del jugador, y no se vuelven a migrar en cargas posteriores.
-- [ ] El resto del catálogo (8 juegos) sigue guardando sus puntuaciones en `localStorage` (`av_scores`) exactamente igual que antes de este spec, sin ningún cambio de comportamiento.
+- [x] `npm run build` y `npm run lint` terminan sin errores.
+- [x] La tabla `scores` existe en Supabase con RLS habilitado, policy de lectura pública, policies de escritura separadas para `authenticated`/`anon`, y el trigger de rate-limit activo.
+- [x] Un insert con `user_id` distinto al del usuario autenticado (`auth.uid()`) falla por RLS.
+- [x] Un insert como `anon` sin `guest_id` (o con `user_id`) falla por RLS.
+- [x] Un insert con `score` fuera del rango `0–2.000.000` falla por el `CHECK`.
+- [x] Guardar dos puntuaciones (`origin='game_over'`) del mismo jugador en el mismo juego dentro de 10 segundos: la segunda es rechazada por el trigger de rate-limit.
+- [x] Jugar `asteroides` como invitado, terminar la partida y guardar la puntuación la persiste en Supabase asociada a un `guest_id` estable en `localStorage` (no editable ahí, pero el nombre sí).
+- [x] Jugar `asteroides` con sesión iniciada, terminar la partida y guardar la puntuación la persiste en Supabase asociada al `user_id` de la cuenta, con el campo de nombre no editable (usa el `display_name` de la cuenta).
+- [x] `/salon`, tab "ASTEROIDES", muestra el podio y la tabla con datos reales de Supabase — una fila por jugador, su mejor score.
+- [x] `/salon`, tab "ASTEROIDES", muestra la fila "TU MEJOR MARCA" tanto para un usuario autenticado como para un invitado que ya guardó al menos una puntuación.
+- [x] `/salon`, el resto de los tabs (8 juegos) sigue mostrando exactamente los mismos datos mock (`seededScores()`) que antes de este spec.
+- [x] `/juego/asteroides` (detalle), la sección "MEJORES PUNTUACIONES" muestra datos reales de Supabase.
+- [x] `/juego/<resto-del-catálogo>` (detalle) sigue mostrando `seededScores()` mock, sin cambios.
+- [x] Al cargar la app con entradas previas de `av_scores` (`game: "asteroides"`) en `localStorage`, esas puntuaciones aparecen en Supabase (`origin: "migration"`) sin intervención del jugador, y no se vuelven a migrar en cargas posteriores.
+- [x] El resto del catálogo (8 juegos) sigue guardando sus puntuaciones en `localStorage` (`av_scores`) exactamente igual que antes de este spec, sin ningún cambio de comportamiento.
 
 ## Decisions
 
