@@ -15,6 +15,16 @@ import { getMejoresPorJugador, resolveGameId } from "@/lib/supabase/scores-share
 
 export type LeaderboardRow = { rank: number; playerName: string; score: number; createdAt: string };
 
+// Formatea `createdAt` (ISO) al mismo "DD/MM/AAAA" que ya usa `ScoreRow.date`
+// en el mock — así una fila real y una mock se ven igual en pantalla.
+// Compartido entre /salon y la ficha de detalle de "asteroides".
+export function formatFecha(iso: string): string {
+  const d = new Date(iso);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  return `${day}/${month}/${d.getFullYear()}`;
+}
+
 // Top N jugadores distintos por su mejor score (no partidas sueltas). Recibe
 // el cliente de Supabase (browser en /salon, server en la ficha de detalle)
 // como primer parámetro.

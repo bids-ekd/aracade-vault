@@ -7,6 +7,7 @@ import { seededScores, type Game } from "@/lib/data";
 import { getOrCreateGuestId } from "@/lib/guest-id";
 import { createClient } from "@/lib/supabase/client";
 import {
+  formatFecha,
   getMejoresPuntuaciones,
   getMiMejorPuntuacion,
   type LeaderboardRow,
@@ -16,13 +17,6 @@ import {
 // Supabase (ASTEROIDES) — mismo shape, la fuente de datos es transparente
 // para el podio/tabla de abajo.
 type DisplayRow = { rank: number; name: string; score: number; date: string };
-
-function formatFecha(iso: string): string {
-  const d = new Date(iso);
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  return `${day}/${month}/${d.getFullYear()}`;
-}
 
 export function SalonHall({ games }: { games: Game[] }) {
   const { user } = useUser();
