@@ -332,9 +332,10 @@ export class TetrisEngine {
   }
 
   // Dibuja tablero + pieza actual + ghost piece + vista previa de la siguiente
-  // pieza, todo centrado dentro del lienzo lógico 800×600. NO dibuja HUD de
-  // texto (score/lines/level) ni overlays de pausa/game over — eso lo resuelve
-  // exclusivamente el HUD externo y el modal/overlay de la plataforma.
+  // pieza, todo centrado dentro del lienzo lógico 800×600, más un HUD de texto
+  // en vivo (SCORE/LÍNEAS/NIVEL) — mismo patrón que AsteroidsEngine.drawHUD().
+  // NO dibuja overlays de pausa/game over — eso lo sigue resolviendo
+  // exclusivamente el modal/overlay de la plataforma.
   draw(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, this.width, this.height);
@@ -418,6 +419,52 @@ export class TetrisEngine {
         );
       }
     }
+
+    this.drawHUD(ctx, previewX, previewY);
+  }
+
+  // HUD de texto en vivo (SCORE/LÍNEAS/NIVEL), mismo espíritu que
+  // AsteroidsEngine.drawHUD(): dibujado directamente sobre el canvas, además
+  // del HUD externo de la plataforma. A diferencia de Asteroids —que tiene
+  // espacio abierto alrededor de la nave—, el tablero de Tetris ocupa el
+  // lienzo de punta a punta justo donde nacen las piezas nuevas: por eso el
+  // texto va en la columna ya reservada para la vista previa (arriba y abajo
+  // de ese panel) en vez de superpuesto al tablero.
+  // Etiqueta tenue + valor con resplandor neón (shadowBlur), mismo criterio de
+  // color que .hud-stat del HUD externo (app/globals.css) y que el propio
+  // acento glow del original (references/started-games/03-tetris/style.css,
+  // `.value { color: #7aa2f7; }` / `.game-title { text-shadow: 0 0 20px … }`):
+  // score cian, líneas verde, nivel amarillo, cada uno con su glow a juego.
+  private drawStat(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    label: string,
+    value: string,
+    color: string,
+    glow: string,
+  ) {
+    ctx.shadowBlur = 0;
+    ctx.font = "10px monospace";
+    ctx.fillStyle = "rgba(255,255,255,0.45)";
+    ctx.fillText(label, x, y);
+
+    ctx.font = "bold 20px monospace";
+    ctx.fillStyle = color;
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = 8;
+    ctx.fillText(value, x, y + 22);
+    ctx.shadowBlur = 0;
+  }
+
+  private drawHUD(ctx: CanvasRenderingContext2D, previewX: number, previewY: number) {
+    ctx.textAlign = "left";
+
+    this.drawStat(ctx, previewX, previewY - 46, "SCORE", String(this.score), "#00f5ff", "#00f5ff");
+
+    const belowY = previewY + PREVIEW_SIZE + 30;
+    this.drawStat(ctx, previewX, belowY, "LINEAS", String(this.lines), "#00ff88", "#00ff88");
+    this.drawStat(ctx, previewX, belowY + 56, "NIVEL", String(this.level), "#f5ff00", "#f5ff00");
   }
 
   getState(): TetrisState {

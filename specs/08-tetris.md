@@ -61,9 +61,11 @@ export class TetrisEngine {
   update(dt: number, input: TetrisInput): void;
   draw(ctx: CanvasRenderingContext2D): void;
   // Dibuja tablero + pieza actual + ghost piece + vista previa de la siguiente pieza,
-  // todo centrado dentro del lienzo lógico 800×600. NO dibuja HUD de texto
-  // (score/lines/level) ni overlays de pausa/game over — eso lo resuelve
-  // exclusivamente el HUD externo y el modal/overlay de la plataforma.
+  // todo centrado dentro del lienzo lógico 800×600, más un HUD de texto en vivo
+  // (SCORE/LÍNEAS/NIVEL) sobre el propio lienzo — mismo patrón que
+  // AsteroidsEngine.drawHUD() (ver Decisions). NO dibuja overlays de pausa/game
+  // over — eso lo sigue resolviendo exclusivamente el modal/overlay de la
+  // plataforma, igual que en Asteroids.
   getState(): TetrisState;
 }
 ```
@@ -111,6 +113,7 @@ values (
 - [ ] `/juego/tetris` (detalle) muestra el copy aprobado, la etiqueta "TECLADO" y la sección "MEJORES PUNTUACIONES" con datos reales de Supabase.
 - [ ] `/juego/tetris/jugar` renderiza el canvas real: mover con `←`/`→`, rotar con `↑`/`X` (con wall kicks), soft drop con `↓`, hard drop con `Espacio`, ghost piece visible, vista previa de la siguiente pieza visible, limpieza de líneas y avance de nivel/velocidad cada 10 líneas.
 - [ ] El HUD externo (`player-hud`) muestra Puntuación, Líneas y Nivel — sin tarjeta de Vidas — sincronizado en todo momento con el estado del motor.
+- [ ] El propio canvas dibuja también un HUD de texto en vivo (SCORE/LÍNEAS/NIVEL), mismo patrón que Asteroides, sincronizado con el HUD externo.
 - [ ] La tarjeta "Líneas" nueva del HUD **no aparece** en ningún otro juego del catálogo (ninguno reporta `lines`).
 - [ ] PAUSA congela el juego por completo (nada se mueve, el teclado no responde); REANUDAR retoma sin saltos bruscos.
 - [ ] El botón "FIN" fuerza el fin de partida con el score acumulado, abriendo el modal de fin de partida.
@@ -130,6 +133,7 @@ values (
 - **Sí:** se agrega la tarjeta "Líneas" nueva al HUD externo (`.hud-stat.lines` + JSX en `game-player.tsx`), aunque signifique tocar un archivo compartido por todo el catálogo. Decisión explícita del usuario — necesaria porque `lines` nunca se había expuesto antes.
 - **No:** dejar `lines` sin reportar al HUD externo. Se descartó a favor de agregar la tarjeta.
 - **Sí:** se elimina el atajo de teclado `P` (pausa propia del original) — la pausa la controla exclusivamente el botón de la plataforma, mismo criterio que Asteroides.
+- **Enmienda post-aprobación (2026-08-08):** el spec originalmente decía que `draw()` **no** dibuja HUD de texto (score/lines/level), dejándolo exclusivamente al HUD externo. El usuario pidió durante la implementación que Tetris mantenga el mismo HUD en vivo dentro del canvas que ya tiene `AsteroidsEngine.drawHUD()` (SCORE/NIVEL en el propio lienzo, además del HUD externo). Se revierte esa exclusión: `draw()` ahora también dibuja SCORE/LÍNEAS/NIVEL sobre el canvas, igual que Asteroides. Se mantiene sin cambios que `draw()` no dibuja overlays de pausa/game over (eso lo sigue resolviendo el modal/overlay de la plataforma). Estilo del HUD en canvas: etiqueta tenue + valor con resplandor neón (`shadowBlur`), un acento de color por estadística (score cian, líneas verde, nivel amarillo) — mismo criterio de color que `.hud-stat` del HUD externo (`app/globals.css`, agregado en el paso 3) y en línea con el propio acento glow del original (`references/started-games/03-tetris/style.css`, `.value`/`.game-title` con `text-shadow`), pedido explícitamente por el usuario para no perder ese estilo "neón" al portar el juego. Ubicado en la columna ya reservada para la vista previa (arriba y abajo de ese panel) en vez de superpuesto al tablero, porque a diferencia de Asteroids —que tiene espacio abierto alrededor de la nave— el tablero de Tetris ocupa el lienzo de punta a punta justo donde nacen las piezas nuevas.
 - **Sí:** leaderboard real en Supabase desde este mismo spec, reutilizando sin cambios el mecanismo ya genérico de SPEC 07 (`guardarPuntuacion`/`migrarPuntuacionesLocales`/lecturas por `gameSlug`). Decisión explícita del usuario.
 - **Sí:** todas las mecánicas del original entran en alcance (wall kicks, ghost piece, vista previa, hard/soft drop scoring, niveles) — el original es chico y no tiene nada que valga la pena diferir. Decisión explícita del usuario.
 - **Sí (heredado):** motor DOM-free (`engine.ts`) envuelto por un componente `"use client"` (`tetris-canvas.tsx`) que posee toda la integración con React/navegador — mismo split que Asteroides.
