@@ -1,6 +1,6 @@
 # SPEC 08 — Tetris (real game)
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** [05-asteroides-juego-real](./05-asteroides-juego-real.md), [06-tabla-juegos-supabase](./06-tabla-juegos-supabase.md), [07-leaderboard-asteroides](./07-leaderboard-asteroides.md)
 > **Date:** 2026-08-07
 > **Objective:** Portar el juego de Tetris de `references/started-games/03-tetris/` (HTML5 Canvas vanilla) a un motor + componente React/Next.js real en `components/games/tetris/`, agregado como una entrada **nueva y aislada** del catálogo (`id: "tetris"`, sin tocar el juego mock existente `caida`) e integrado vía el registro genérico de motores reales (`lib/games/registry.ts` + `components/games/engine-registry.tsx`), con leaderboard real en Supabase.
@@ -107,20 +107,20 @@ values (
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] La tabla `games` de Supabase tiene una fila nueva `tetris` con los valores acordados, verificada vía `execute_sql`.
-- [ ] `/biblioteca` muestra una ficha nueva "TETRIS" (portada `.cover-tetris`, acento cian), separada de "CAÍDA", que sigue existiendo sin cambios como mock.
-- [ ] `/juego/tetris` (detalle) muestra el copy aprobado, la etiqueta "TECLADO" y la sección "MEJORES PUNTUACIONES" con datos reales de Supabase.
-- [ ] `/juego/tetris/jugar` renderiza el canvas real: mover con `←`/`→`, rotar con `↑`/`X` (con wall kicks), soft drop con `↓`, hard drop con `Espacio`, ghost piece visible, vista previa de la siguiente pieza visible, limpieza de líneas y avance de nivel/velocidad cada 10 líneas.
-- [ ] El HUD externo (`player-hud`) muestra Puntuación, Líneas y Nivel — sin tarjeta de Vidas — sincronizado en todo momento con el estado del motor.
-- [ ] El propio canvas dibuja también un HUD de texto en vivo (SCORE/LÍNEAS/NIVEL), mismo patrón que Asteroides, sincronizado con el HUD externo.
-- [ ] La tarjeta "Líneas" nueva del HUD **no aparece** en ningún otro juego del catálogo (ninguno reporta `lines`).
-- [ ] PAUSA congela el juego por completo (nada se mueve, el teclado no responde); REANUDAR retoma sin saltos bruscos.
-- [ ] El botón "FIN" fuerza el fin de partida con el score acumulado, abriendo el modal de fin de partida.
-- [ ] Desde el modal, "GUARDAR PUNTUACIÓN" persiste el score real en Supabase (tabla `scores`, `game_id` de `tetris`), respetando el rate-limit de 10s y las reglas de identidad (sesión o invitado).
-- [ ] "JUGAR DE NUEVO" arranca una partida nueva desde cero (score 0, líneas 0, nivel 1, tablero vacío), remontando el motor vía `key={resetToken}`.
-- [ ] `/salon` muestra un tab "TETRIS" con podio y tabla de datos reales de Supabase, igual que "ASTEROIDES"; el resto de los tabs (incluido `caida`, mock) sigue exactamente igual.
-- [ ] No hay regresiones en ningún otro juego del catálogo (`caida`, `asteroides` y el resto de los mock).
+- [x] `npm run build` y `npm run lint` terminan sin errores.
+- [x] La tabla `games` de Supabase tiene una fila nueva `tetris` con los valores acordados, verificada vía `execute_sql`.
+- [x] `/biblioteca` muestra una ficha nueva "TETRIS" (portada `.cover-tetris`, acento cian), separada de "CAÍDA", que sigue existiendo sin cambios como mock.
+- [x] `/juego/tetris` (detalle) muestra el copy aprobado, la etiqueta "TECLADO" y la sección "MEJORES PUNTUACIONES" con datos reales de Supabase.
+- [x] `/juego/tetris/jugar` renderiza el canvas real: mover con `←`/`→`, rotar con `↑`/`X` (con wall kicks), soft drop con `↓`, hard drop con `Espacio`, ghost piece visible, vista previa de la siguiente pieza visible, limpieza de líneas y avance de nivel/velocidad cada 10 líneas.
+- [x] El HUD externo (`player-hud`) muestra Puntuación, Líneas y Nivel — sin tarjeta de Vidas — sincronizado en todo momento con el estado del motor.
+- [x] El propio canvas dibuja también un HUD de texto en vivo (SCORE/LÍNEAS/NIVEL), mismo patrón que Asteroides, sincronizado con el HUD externo.
+- [x] La tarjeta "Líneas" nueva del HUD **no aparece** en ningún otro juego del catálogo (ninguno reporta `lines`).
+- [x] PAUSA congela el juego por completo (nada se mueve, el teclado no responde); REANUDAR retoma sin saltos bruscos.
+- [x] El botón "FIN" fuerza el fin de partida con el score acumulado, abriendo el modal de fin de partida.
+- [x] Desde el modal, "GUARDAR PUNTUACIÓN" persiste el score real en Supabase (tabla `scores`, `game_id` de `tetris`), respetando el rate-limit de 10s y las reglas de identidad (sesión o invitado).
+- [x] "JUGAR DE NUEVO" arranca una partida nueva desde cero (score 0, líneas 0, nivel 1, tablero vacío), remontando el motor vía `key={resetToken}`.
+- [x] `/salon` muestra un tab "TETRIS" con podio y tabla de datos reales de Supabase, igual que "ASTEROIDES"; el resto de los tabs (incluido `caida`, mock) sigue exactamente igual.
+- [x] No hay regresiones en ningún otro juego del catálogo (`caida`, `asteroides` y el resto de los mock).
 
 ## Decisions
 
