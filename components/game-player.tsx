@@ -57,6 +57,10 @@ export function GamePlayer({ game }: { game: Game }) {
   // tarjeta correspondiente del HUD, ver más abajo).
   const lives = isRealEngine ? engineState.lives : 3;
   const level = isRealEngine ? engineState.level : 1 + Math.floor(score / 2500);
+  // A diferencia de vidas/nivel, el resto del catálogo (mock) no tiene un
+  // equivalente derivable de líneas: queda undefined salvo que un motor real
+  // (hoy solo Tetris) lo reporte, ocultando la tarjeta en todos los demás.
+  const lines = isRealEngine ? engineState.lines : undefined;
   const [resetToken, setResetToken] = useState(0);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
@@ -185,6 +189,12 @@ export function GamePlayer({ game }: { game: Game }) {
             <div className="hud-stat lives">
               <div className="l">Vidas</div>
               <div className="v">{"♥ ".repeat(lives).trim() || "—"}</div>
+            </div>
+          )}
+          {lines !== undefined && (
+            <div className="hud-stat lines">
+              <div className="l">Líneas</div>
+              <div className="v">{String(lines).padStart(3, "0")}</div>
             </div>
           )}
           {level !== undefined && (
