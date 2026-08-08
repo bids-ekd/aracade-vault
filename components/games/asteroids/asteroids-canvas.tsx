@@ -2,18 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import { AsteroidsEngine, type AsteroidsInput } from "@/components/games/asteroids/engine";
+import type { GameCanvasProps } from "@/lib/games/types";
 
 const WIDTH = 800;
 const HEIGHT = 600;
 const KEY_CODES = ["ArrowLeft", "ArrowRight", "ArrowUp", "Space"];
 
-type AsteroidsCanvasProps = {
-  paused: boolean;
-  onStateChange: (state: { score: number; lives: number; level: number }) => void;
-  onGameOver: (finalScore: number) => void;
-};
-
-export function AsteroidsCanvas({ paused, onStateChange, onGameOver }: AsteroidsCanvasProps) {
+export function AsteroidsCanvas({ paused, onStateChange, onGameOver }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<AsteroidsEngine | null>(null);
   const rafRef = useRef<number | null>(null);

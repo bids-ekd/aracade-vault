@@ -52,17 +52,22 @@ export async function getGameBySlug(slug: string): Promise<Game | undefined> {
 }
 
 // Trae todas las filas de `games` en Supabase (mapeadas a Game) + el mock
-// `GAMES` completo (sin "asteroides", que ya no está ahí). Concatenados,
-// sin reordenar el mock — las filas de Supabase se insertan en la posición
-// donde estaba "asteroides" hoy (al final), para no alterar el orden
-// visual de la biblioteca.
+// `GAMES` completo. Los juegos reales van primero: son el valor central de
+// la plataforma (motor jugable, leaderboard real), así que encabezan
+// /biblioteca, entran en la preview de la home y son el tab por defecto de
+// /salon. Se ordena por `created_at` y luego por `slug` como desempate:
+// un seed que inserta varias filas en un mismo batch les da a todas el
+// mismo `created_at` (timestamp de transacción), así que sin el desempate
+// el orden entre ellas quedaría indeterminado.
 export async function getAllGames(): Promise<Game[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("games")
-    .select("slug, title, short, long, cat, cover, color, controls, best, plays");
+    .select("slug, title, short, long, cat, cover, color, controls, best, plays")
+    .order("created_at", { ascending: true })
+    .order("slug", { ascending: true });
 
   const supabaseGames = (data ?? []).map((row) => mapRowToGame(row as GameRow));
 
-  return [...GAMES, ...supabaseGames];
+  return [...supabaseGames, ...GAMES];
 }

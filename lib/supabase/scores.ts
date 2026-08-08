@@ -1,14 +1,16 @@
-// ===== scores.ts — lecturas del leaderboard real de Asteroides (Supabase) =====
+// ===== scores.ts — lecturas del leaderboard real (Supabase) =====
 //
-// Cubre únicamente "asteroides" (ver SPEC 07). El resto del catálogo sigue
-// usando `seededScores()` mock en localStorage, sin tocar este archivo.
+// Cubre cualquier juego con motor real (ver lib/games/registry.ts) —
+// originalmente solo "asteroides" (ver SPEC 07). El resto del catálogo
+// sigue usando `seededScores()` mock en localStorage, sin tocar este
+// archivo.
 //
 // Estas funciones NO son Server Actions: reciben el cliente de Supabase ya
 // creado (browser en /salon, server en la ficha de detalle) como primer
 // parámetro, y ese objeto no es serializable a través del límite
 // cliente/servidor que usan las Server Actions — por eso el guardado
-// (`guardarPuntuacionAsteroides`/`migrarPuntuacionesLocales`) vive aparte,
-// en lib/supabase/score-actions.ts.
+// (`guardarPuntuacion`/`migrarPuntuacionesLocales`) vive aparte, en
+// lib/supabase/score-actions.ts.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMejoresPorJugador, resolveGameId } from "@/lib/supabase/scores-shared";
@@ -17,7 +19,7 @@ export type LeaderboardRow = { rank: number; playerName: string; score: number; 
 
 // Formatea `createdAt` (ISO) al mismo "DD/MM/AAAA" que ya usa `ScoreRow.date`
 // en el mock — así una fila real y una mock se ven igual en pantalla.
-// Compartido entre /salon y la ficha de detalle de "asteroides".
+// Compartido entre /salon y la ficha de detalle de cualquier juego real.
 export function formatFecha(iso: string): string {
   const d = new Date(iso);
   const day = String(d.getDate()).padStart(2, "0");

@@ -1,4 +1,4 @@
-// ===== score-actions.ts — Server Actions de guardado del leaderboard de Asteroides =====
+// ===== score-actions.ts — Server Actions de guardado del leaderboard real =====
 //
 // Separado de lib/supabase/scores.ts (lecturas) porque este archivo lleva
 // `"use server"` a nivel de módulo: Next.js exige eso para poder importar
@@ -8,9 +8,9 @@
 // parámetro y no podrían vivir aquí sin romper esa regla.
 "use server";
 
+import { hasRealEngine } from "@/lib/games/registry";
 import { createClient } from "@/lib/supabase/server";
 import {
-  ASTEROIDES_SLUG,
   displayNameFromUser,
   resolveGameId,
   type ScoreInsertRow,
@@ -18,20 +18,29 @@ import {
 
 export type SaveScoreResult = { ok: true } | { ok: false; error: string };
 
-// Server Action — guardado interactivo (fin de partida). Con sesión activa,
-// ignora playerName/guestId del input y usa el user_id + display_name de la
-// cuenta. Sin sesión, exige guestId y usa playerName tal cual lo escribió el
+// Server Action — guardado interactivo (fin de partida) para cualquier juego
+// con motor real (ver lib/games/registry.ts). Con sesión activa, ignora
+// playerName/guestId del input y usa el user_id + display_name de la cuenta.
+// Sin sesión, exige guestId y usa playerName tal cual lo escribió el
 // invitado.
-export async function guardarPuntuacionAsteroides(input: {
+export async function guardarPuntuacion(input: {
+  gameSlug: string;
   score: number;
   playerName: string;
   guestId: string | null;
 }): Promise<SaveScoreResult> {
+  // El slug lo provee el cliente: se valida contra el registro de juegos
+  // reales antes de tocar la base, para que no se pueda postear al board de
+  // un juego arbitrario (uno mock, o uno inexistente).
+  if (!hasRealEngine(input.gameSlug)) {
+    return { ok: false, error: `"${input.gameSlug}" no tiene leaderboard real.` };
+  }
+
   const supabase = await createClient();
 
   let gameId: string;
   try {
-    gameId = await resolveGameId(supabase, ASTEROIDES_SLUG);
+    gameId = await resolveGameId(supabase, input.gameSlug);
   } catch (err) {
     return { ok: false, error: (err as Error).message };
   }
@@ -60,20 +69,23 @@ export async function guardarPuntuacionAsteroides(input: {
   return { ok: true };
 }
 
-// Server Action — migración única del histórico de av_scores (ya filtrado a
-// game === "asteroides"). Misma resolución de identidad que arriba; inserta
-// todo en un solo batch con origin: "migration" (exento del rate-limit).
+// Server Action — migración única del histórico de av_scores de un juego
+// dado (ya filtrado por el llamador a ese `gameSlug`). Misma resolución de
+// identidad que arriba; inserta todo en un solo batch con origin:
+// "migration" (exento del rate-limit).
 export async function migrarPuntuacionesLocales(
+  gameSlug: string,
   entries: { score: number; name: string; at: number }[],
   guestId: string | null,
 ): Promise<{ migrated: number }> {
   if (entries.length === 0) return { migrated: 0 };
+  if (!hasRealEngine(gameSlug)) return { migrated: 0 };
 
   const supabase = await createClient();
 
   let gameId: string;
   try {
-    gameId = await resolveGameId(supabase, ASTEROIDES_SLUG);
+    gameId = await resolveGameId(supabase, gameSlug);
   } catch {
     return { migrated: 0 };
   }
