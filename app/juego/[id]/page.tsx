@@ -2,13 +2,26 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { seededScores } from "@/lib/data";
 import { getGameBySlug } from "@/lib/supabase/games";
+import { formatFecha, getMejoresPuntuaciones } from "@/lib/supabase/scores";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function GameDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const game = await getGameBySlug(id);
   if (!game) notFound();
 
-  const scores = seededScores(id.length * 17 + 3, 10);
+  // Único juego con leaderboard real hoy (ver SPEC 07) — mismo criterio que
+  // components/game-player.tsx y components/salon-hall.tsx. El resto del
+  // catálogo sigue con seededScores() mock, sin ningún cambio.
+  const isAsteroides = game.controls === "teclado";
+  const scores = isAsteroides
+    ? (await getMejoresPuntuaciones(await createClient(), id, 10)).map((r) => ({
+        rank: r.rank,
+        name: r.playerName,
+        score: r.score,
+        date: formatFecha(r.createdAt),
+      }))
+    : seededScores(id.length * 17 + 3, 10);
 
   return (
     <div className="av-detail fade-in">
@@ -63,6 +76,14 @@ export default async function GameDetailPage({ params }: { params: Promise<{ id:
       <aside>
         <div className="leaderboard">
           <h3>MEJORES PUNTUACIONES</h3>
+          {isAsteroides && scores.length === 0 && (
+            <div
+              className="mono"
+              style={{ fontSize: 11, color: "var(--ink-dim)", padding: "12px 0" }}
+            >
+              SIN PUNTUACIONES TODAVÍA. ¡SÉ EL PRIMERO EN GRABAR TU MARCA!
+            </div>
+          )}
           {scores.map((r, i) => (
             <div
               key={r.name}

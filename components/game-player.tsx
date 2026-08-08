@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AsteroidsCanvas } from "@/components/games/asteroids/asteroids-canvas";
 import { useUser } from "@/components/user-provider";
 import type { Game } from "@/lib/data";
+import { getOrCreateGuestId } from "@/lib/guest-id";
+import {
+  guardarPuntuacionAsteroides,
+  migrarPuntuacionesLocales,
+} from "@/lib/supabase/score-actions";
 
 const SCORES_STORAGE_KEY = "av_scores";
+const MIGRATION_FLAG_KEY = "av_scores_migrated_asteroides";
 
 type SavedScore = { game: string; score: number; name: string; at: number };
 
@@ -19,7 +25,7 @@ function saveScore(entry: { game: string; score: number; name: string }) {
 }
 
 export function GamePlayer({ game }: { game: Game }) {
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   // ASTEROIDES es, por ahora, el único juego con motor real: cuando `controls`
   // es "teclado" se monta AsteroidsCanvas en vez de la simulación mock.
   const isRealEngine = game.controls === "teclado";
@@ -35,7 +41,13 @@ export function GamePlayer({ game }: { game: Game }) {
   // y solo se guarda localmente si el jugador edita sus iniciales a mano.
   const [nameOverride, setNameOverride] = useState<string | null>(null);
   const name = nameOverride ?? (user ? user.name : "INVITADO");
+  // Solo ASTEROIDES persiste en Supabase; ahí, con sesión iniciada el nombre
+  // deja de ser editable (se guarda con el display_name de la cuenta). El
+  // resto del catálogo (mock, localStorage) sigue siendo editable siempre.
+  const nameIsEditable = !(isRealEngine && user);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   // Para el resto del catálogo (simulado) el nivel sigue derivándose del score,
   // tal como antes; ASTEROIDES lo recibe en vivo del motor vía onStateChange.
   const displayLevel = isRealEngine ? level : 1 + Math.floor(score / 2500);
@@ -46,6 +58,46 @@ export function GamePlayer({ game }: { game: Game }) {
     const t = setInterval(() => setScore((s) => s + Math.floor(10 + Math.random() * 90)), 220);
     return () => clearInterval(t);
   }, [isRealEngine, over, paused]);
+
+  // Migración automática y silenciosa del histórico de av_scores ("asteroides")
+  // a Supabase, una sola vez por navegador. Corre al montar esta pantalla (no
+  // depende de que el jugador termine una partida). `migrationAttempted`
+  // evita un doble intento concurrente (p. ej. el doble-invoke de efectos en
+  // desarrollo); si el intento falla, se libera para reintentar en el
+  // próximo montaje sin haber marcado el flag.
+  const migrationAttempted = useRef(false);
+  useEffect(() => {
+    if (!isRealEngine) return;
+    if (userLoading) return;
+    if (migrationAttempted.current) return;
+    if (localStorage.getItem(MIGRATION_FLAG_KEY) === "1") return;
+
+    let historial: SavedScore[];
+    try {
+      historial = JSON.parse(localStorage.getItem(SCORES_STORAGE_KEY) || "[]");
+    } catch {
+      historial = [];
+    }
+    const entries = historial
+      .filter((entry) => entry.game === "asteroides")
+      .map((entry) => ({ score: entry.score, name: entry.name, at: entry.at }));
+
+    if (entries.length === 0) return;
+
+    migrationAttempted.current = true;
+    const guestId = user ? null : getOrCreateGuestId();
+    migrarPuntuacionesLocales(entries, guestId)
+      .then((result) => {
+        if (result.migrated > 0) {
+          localStorage.setItem(MIGRATION_FLAG_KEY, "1");
+        } else {
+          migrationAttempted.current = false;
+        }
+      })
+      .catch(() => {
+        migrationAttempted.current = false;
+      });
+  }, [isRealEngine, userLoading, user]);
 
   const handleStateChange = useCallback(
     (state: { score: number; lives: number; level: number }) => {
@@ -69,7 +121,29 @@ export function GamePlayer({ game }: { game: Game }) {
     setPaused(false);
     setOver(false);
     setSaved(false);
+    setSaving(false);
+    setSaveError(null);
     if (isRealEngine) setResetToken((t) => t + 1);
+  };
+
+  const handleSaveScore = async () => {
+    if (!isRealEngine) {
+      saveScore({ game: game.id, score, name });
+      setSaved(true);
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+    const guestId = user ? null : getOrCreateGuestId();
+    const result = await guardarPuntuacionAsteroides({ score, playerName: name, guestId });
+    setSaving(false);
+
+    if (result.ok) {
+      setSaved(true);
+    } else {
+      setSaveError(result.error);
+    }
   };
 
   return (
@@ -163,22 +237,28 @@ export function GamePlayer({ game }: { game: Game }) {
             <div className="final-label">PUNTUACIÓN FINAL</div>
             <div className="final">{score.toLocaleString("es-ES")}</div>
             {!saved ? (
-              <div className="input-row">
-                <input
-                  value={name}
-                  onChange={(e) => setNameOverride(e.target.value.toUpperCase().slice(0, 10))}
-                  placeholder="TUS INICIALES"
-                />
-                <button
-                  className="btn yellow"
-                  onClick={() => {
-                    saveScore({ game: game.id, score, name });
-                    setSaved(true);
-                  }}
-                >
-                  GUARDAR PUNTUACIÓN
-                </button>
-              </div>
+              <>
+                <div className="input-row">
+                  <input
+                    value={name}
+                    readOnly={!nameIsEditable}
+                    onChange={
+                      nameIsEditable
+                        ? (e) => setNameOverride(e.target.value.toUpperCase().slice(0, 10))
+                        : undefined
+                    }
+                    placeholder="TUS INICIALES"
+                  />
+                  <button className="btn yellow" onClick={handleSaveScore} disabled={saving}>
+                    {saving ? "GUARDANDO…" : "GUARDAR PUNTUACIÓN"}
+                  </button>
+                </div>
+                {saveError && (
+                  <div className="mono" style={{ color: "var(--magenta)", fontSize: 11 }}>
+                    ▸ {saveError}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>
             )}
