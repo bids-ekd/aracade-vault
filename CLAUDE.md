@@ -18,6 +18,32 @@ existentes están en estado `Implemented`.
 
 ## Skills y flujo de trabajo
 
+### Agentes
+
+- **`game-planner`** (`.claude/agents/game-planner.md`) — decide **qué** juego agregar a
+  continuación. Evalúa candidatos (promover una ficha mock o un juego nuevo) contra el contrato del
+  motor, el HUD, el modelo de input y los huecos de catálogo; mantiene el To Do de sugerencias en
+  `references/game-suggetions-todo.md` y termina recomendando `/spec-juego <slug>`. No escribe
+  código ni specs.
+- **`game-jam`** (`.claude/agents/game-jam.md`) — convierte un **tema** en un paquete de
+  especificación completo para un juego nuevo, sin ida y vuelta. Evalúa tres candidatos de arcade
+  clásico reinterpretados al tema con la misma rúbrica de `game-planner`, elige uno y escribe cinco
+  archivos (`00-concepto.md`, `01-gameplay.md`, `02-motor.md`, `03-arte.md`, `04-catalogo.md`) en
+  `specs/game-jam/<slug>/`, todos en estado `Draft`. `02-motor.md` sigue el mismo formato que una
+  spec de `/spec-juego` y es la que se promueve a `specs/NN-<slug>.md` una vez aprobada. Vía
+  paralela a `game-planner`, no lo reemplaza: úsalo cuando haya un tema de partida, no cuando la
+  pregunta sea "qué juego sigue" en general.
+- **`skin-designer`** (`.claude/agents/skin-designer.md`) — aplica las tres skins (`clasico`
+  default, `neon`, `retro`, cada una con variante clara y oscura) a **un juego con motor real por
+  corrida**, el que el usuario indique explícitamente — nunca a los cuatro a la vez. A diferencia
+  de `game-planner` y `game-jam`, sí escribe código: audita el motor pedido, completa
+  `lib/games/skins.ts` y su `engine.ts`/`<slug>-canvas.tsx`, y registra el avance en
+  `references/game-with-themes.md`. Opera sobre motores ya implementados, no diseña specs.
+
+Flujo completo para un juego nuevo: `game-planner` → `/spec-juego` → `/spec-impl` → `skin-designer`.
+Flujo temático (game jam): `game-jam <tema>` → revisar `specs/game-jam/<slug>/` → promover
+`02-motor.md` a `specs/NN-<slug>.md` → `/spec-impl` → `skin-designer`.
+
 Skills instaladas en `.claude/skills/` y `.agents/skills/`:
 
 - **`/spec`** — diseña una spec nueva (`specs/NN-slug.md`, estado `Draft`). No escribe código.
@@ -27,7 +53,7 @@ Skills instaladas en `.claude/skills/` y `.agents/skills/`:
   real y leaderboard**. Usa siempre esta, no `/spec`, cuando la funcionalidad sea un juego: aplica
   el checklist de portabilidad (globals del DOM, reloj, modelo de input, HUD, overlays, assets,
   restart, `dt`) contra el código original en `references/started-games/`. Es la ruta probada para
-  los últimos tres juegos (Tetris, Arkanoid, Snake). 
+  los últimos tres juegos (Tetris, Arkanoid, Snake).
 - **`/frontend-design`** — úsala siempre para diseñar interfaces de usuario.
 
 `/spec` y `/spec-impl` vienen de https://github.com/Klerith/fernando-skills
@@ -104,6 +130,8 @@ specs/                    01..10, todas Implemented
 references/               material de origen, NO es parte de la app (lint lo ignora)
   started-games/          juegos originales en JS vanilla, fuente de los ports
   sources-assets/         sprites y assets crudos
+  implemented-games.md    catálogo de juegos con motor real (fuente para game-planner)
+  game-suggetions-todo.md To Do de sugerencias de juego, mantenido por game-planner
 ```
 
 ## Arquitectura
@@ -223,6 +251,8 @@ hace =====`** que explica _por qué_ está partido así. Si tocas uno de esos ar
   actualizado ese comentario — son la memoria de las restricciones de Next.js que motivaron cada
   separación.
 - `references/` es material de origen de solo lectura: no lo edites, no lo importes desde la app, y
-  está fuera de ESLint y del hook de formato.
+  está fuera de ESLint y del hook de formato. Excepciones: `game-suggetions-todo.md`, que
+  `game-planner` sí actualiza, y `game-with-themes.md`, que `skin-designer` sí actualiza — son su
+  memoria persistente, no material de origen.
 - Variables de entorno en `.env.example`: `RESEND_API_KEY`, `RESEND_TO_EMAIL`,
   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
