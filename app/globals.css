@@ -482,6 +482,74 @@ a {
   }
 }
 
+/* ===== touch controls (overlay táctil, ver components/games/touch-controls.tsx) ===== */
+/* Overlay puro: el contenedor no captura toques (pointer-events: none), solo
+   cada .touch-btn individual, para no tapar el resto de la pantalla. */
+.touch-controls {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 16px;
+  pointer-events: none;
+}
+.touch-controls-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+.touch-controls-left {
+  flex-wrap: wrap;
+  max-width: 190px;
+}
+.touch-btn {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--pixel);
+  font-size: 18px;
+  color: var(--cyan);
+  background: rgba(5, 5, 10, 0.45);
+  border: 1px solid var(--cyan);
+  border-radius: 50%;
+  box-shadow: inset 0 0 8px rgba(0, 245, 255, 0.2);
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition:
+    transform 80ms ease,
+    box-shadow 120ms ease,
+    background 120ms ease;
+}
+.touch-btn:active {
+  transform: scale(0.92);
+  background: rgba(0, 245, 255, 0.25);
+  box-shadow:
+    0 0 14px rgba(0, 245, 255, 0.55),
+    inset 0 0 10px rgba(0, 245, 255, 0.4);
+}
+.touch-controls-right .touch-btn {
+  width: 68px;
+  height: 68px;
+  font-size: 22px;
+  color: var(--magenta);
+  border-color: var(--magenta);
+  box-shadow: inset 0 0 8px rgba(255, 0, 110, 0.2);
+}
+.touch-controls-right .touch-btn:active {
+  background: rgba(255, 0, 110, 0.25);
+  box-shadow:
+    0 0 14px rgba(255, 0, 110, 0.55),
+    inset 0 0 10px rgba(255, 0, 110, 0.4);
+}
+
 /* ===== hero / library ===== */
 .av-hero {
   padding: 64px 32px 32px;
