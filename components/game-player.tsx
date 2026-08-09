@@ -4,10 +4,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getGameEngine, GameEngineSlot } from "@/components/games/engine-registry";
 import { useTheme } from "@/components/theme-provider";
+import { TouchPanelPortalProvider } from "@/components/games/touch-panel-portal";
+import { useTouchDevice } from "@/components/games/use-touch-device";
 import { useUser } from "@/components/user-provider";
 import type { Game } from "@/lib/data";
 import { getOrCreateGuestId } from "@/lib/guest-id";
+import { hasRealEngine } from "@/lib/games/registry";
 import { SKIN_IDS, SKIN_LABELS, SKINNED_GAME_SLUGS, isSkinId } from "@/lib/games/skins";
+import { TOUCH_ENABLED_GAME_SLUGS } from "@/lib/games/touch";
 import type { GameEngineState } from "@/lib/games/types";
 import { guardarPuntuacion, migrarPuntuacionesLocales } from "@/lib/supabase/score-actions";
 
@@ -61,6 +65,27 @@ export function GamePlayer({ game }: { game: Game }) {
   // JSX; como prop sí lo acepta.
   const Engine = getGameEngine(game.id);
   const isRealEngine = Engine !== undefined;
+  // Piloto táctil (SPEC 11): solo Asteroides está en TOUCH_ENABLED_GAME_SLUGS
+  // hoy, así que para el resto del catálogo `touchEnabled` da false y nada de
+  // lo que sigue (panel de controles, touch-action: none) se activa.
+  // hasRealEngine(game.id) angosta el tipo de game.id a RealGameSlug antes de
+  // consultar el array tipado — sin el guard, TypeScript rechaza pasar un
+  // `string` genérico a `.includes()` de un `readonly RealGameSlug[]`.
+  const touchEnabled = hasRealEngine(game.id) && TOUCH_ENABLED_GAME_SLUGS.includes(game.id);
+  const isTouch = useTouchDevice();
+  // A diferencia de `touchEnabled` (solo configuración: el slug soporta
+  // touch), `touchActive` exige además que ESTE dispositivo sea táctil: el
+  // motor solo renderiza su panel de controles cuando isTouch es true (ver
+  // asteroids-canvas.tsx), así que touch-action: none y el panel externo
+  // deben depender de lo mismo — aplicarlos solo por `touchEnabled` los
+  // dejaría activos (y vacíos) para un usuario de mouse/teclado.
+  const touchActive = touchEnabled && isTouch;
+  // Nodo DOM del panel de controles, FUERA de `.crt` (layout tipo GameBoy).
+  // El motor (p. ej. asteroids-canvas.tsx) le hace createPortal() a este
+  // nodo vía TouchPanelPortalProvider — ver touch-panel-portal.tsx. Se
+  // resuelve con un ref callback (no useRef) porque necesitamos re-renderizar
+  // cuando el nodo se monta, para que el Provider baje la referencia real.
+  const [touchPanelEl, setTouchPanelEl] = useState<HTMLDivElement | null>(null);
   const [engineState, setEngineState] = useState<GameEngineState>(INITIAL_ENGINE_STATE);
   const score = engineState.score;
   // Para el resto del catálogo (simulado) vidas/nivel siguen fijos/derivados
@@ -257,55 +282,71 @@ export function GamePlayer({ game }: { game: Game }) {
         </div>
       </div>
 
-      <div className="crt">
-        <div className="crt-screen">
-          <div className="game-arena">
-            {Engine ? (
-              <GameEngineSlot
-                key={resetToken}
-                engine={Engine}
-                paused={paused || over}
-                skin={skin}
-                onStateChange={handleStateChange}
-                onGameOver={handleGameOver}
-              />
-            ) : (
-              <>
-                <div className="grid-floor"></div>
-                <div className="enemy e1"></div>
-                <div className="enemy e2"></div>
-                <div className="enemy e3"></div>
-                <div className="player-ship"></div>
-              </>
-            )}
-          </div>
-          {paused && (
-            <div className="crt-content" style={{ background: "rgba(0,0,0,0.6)", zIndex: 5 }}>
-              <div>
-                <div className="pixel neon-yellow" style={{ fontSize: 22 }}>
-                  EN PAUSA
-                </div>
-                <div
-                  className="mono"
-                  style={{
-                    fontSize: 11,
-                    color: "var(--ink-dim)",
-                    marginTop: 10,
-                    letterSpacing: "0.16em",
-                  }}
-                >
-                  PULSA REANUDAR PARA CONTINUAR
+      {/* TouchPanelPortalProvider envuelve el <GameEngineSlot> para que el
+          motor (dentro de .game-arena, bien adentro de .crt) pueda hacerle
+          createPortal() a #touchPanelEl más abajo — FUERA de .crt, layout
+          tipo GameBoy — sin que el contrato compartido GameCanvasProps se
+          entere. Ver components/games/touch-panel-portal.tsx. */}
+      <TouchPanelPortalProvider value={touchPanelEl}>
+        <div className="crt">
+          <div className="crt-screen">
+            <div className={"game-arena" + (touchActive ? " game-arena-touch" : "")}>
+              {Engine ? (
+                <GameEngineSlot
+                  key={resetToken}
+                  engine={Engine}
+                  paused={paused || over}
+                  skin={skin}
+                  onStateChange={handleStateChange}
+                  onGameOver={handleGameOver}
+                />
+              ) : (
+                <>
+                  <div className="grid-floor"></div>
+                  <div className="enemy e1"></div>
+                  <div className="enemy e2"></div>
+                  <div className="enemy e3"></div>
+                  <div className="player-ship"></div>
+                </>
+              )}
+            </div>
+            {paused && (
+              <div className="crt-content" style={{ background: "rgba(0,0,0,0.6)", zIndex: 5 }}>
+                <div>
+                  <div className="pixel neon-yellow" style={{ fontSize: 22 }}>
+                    EN PAUSA
+                  </div>
+                  <div
+                    className="mono"
+                    style={{
+                      fontSize: 11,
+                      color: "var(--ink-dim)",
+                      marginTop: 10,
+                      letterSpacing: "0.16em",
+                    }}
+                  >
+                    PULSA REANUDAR PARA CONTINUAR
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+          <div className="crt-bottom">
+            <span className="led">SEÑAL OK</span>
+            <span>{game.title} · CRT-83 · 60 HZ</span>
+            <span>CARGA · 1MB</span>
+          </div>
         </div>
-        <div className="crt-bottom">
-          <span className="led">SEÑAL OK</span>
-          <span>{game.title} · CRT-83 · 60 HZ</span>
-          <span>CARGA · 1MB</span>
-        </div>
-      </div>
+
+        {/* Cuerpo de la consola, FUERA de .crt: layout tipo GameBoy (pantalla
+            arriba, botones abajo, piezas separadas). Solo existe cuando el
+            panel está realmente activo — para el resto del catálogo y para
+            un usuario de mouse/teclado, ni se monta. El motor le hace
+            createPortal() a este nodo (ver AsteroidsCanvas +
+            useTouchPanelPortal()); game-player.tsx no sabe qué botones tiene
+            cada juego, solo le presta el lugar en la página. */}
+        {touchActive && <div className="game-console-controls" ref={setTouchPanelEl} />}
+      </TouchPanelPortalProvider>
 
       {over && (
         <div className="modal-bd">
