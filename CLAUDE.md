@@ -25,8 +25,18 @@ existentes están en estado `Implemented`.
   motor, el HUD, el modelo de input y los huecos de catálogo; mantiene el To Do de sugerencias en
   `references/game-suggetions-todo.md` y termina recomendando `/spec-juego <slug>`. No escribe
   código ni specs.
+- **`game-jam`** (`.claude/agents/game-jam.md`) — convierte un **tema** en un paquete de
+  especificación completo para un juego nuevo, sin ida y vuelta. Evalúa tres candidatos de arcade
+  clásico reinterpretados al tema con la misma rúbrica de `game-planner`, elige uno y escribe cinco
+  archivos (`00-concepto.md`, `01-gameplay.md`, `02-motor.md`, `03-arte.md`, `04-catalogo.md`) en
+  `specs/game-jam/<slug>/`, todos en estado `Draft`. `02-motor.md` sigue el mismo formato que una
+  spec de `/spec-juego` y es la que se promueve a `specs/NN-<slug>.md` una vez aprobada. Vía
+  paralela a `game-planner`, no lo reemplaza: úsalo cuando haya un tema de partida, no cuando la
+  pregunta sea "qué juego sigue" en general.
 
 Flujo completo para un juego nuevo: `game-planner` → `/spec-juego` → `/spec-impl`.
+Flujo temático (game jam): `game-jam <tema>` → revisar `specs/game-jam/<slug>/` → promover
+`02-motor.md` a `specs/NN-<slug>.md` → `/spec-impl`.
 
 Skills instaladas en `.claude/skills/` y `.agents/skills/`:
 
