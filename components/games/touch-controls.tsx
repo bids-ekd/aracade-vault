@@ -43,7 +43,13 @@ export function TouchControls({ buttons, onPress, onRelease }: TouchControlsProp
 
   const handlePointerDown = (id: string) => (e: ReactPointerEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
+    // setPointerCapture puede tirar NotFoundError en algunos navegadores si
+    // el pointer ya dejó de estar activo para cuando corre el handler (p.
+    // ej. un tap muy rápido). Sin este try/catch, esa excepción cortaba la
+    // función ANTES de llegar a onPress(id) — el toque no disparaba nada.
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
     onPress(id);
   };
   const handlePointerUp = (id: string) => (e: ReactPointerEvent<HTMLButtonElement>) => {
