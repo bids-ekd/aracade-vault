@@ -550,6 +550,35 @@ a {
     inset 0 0 10px rgba(255, 0, 110, 0.4);
 }
 
+/* ===== rotate notice (SPEC 11 — aviso de orientación en touch) ===== */
+/* Ocupa el mismo .crt-screen que reemplaza, ver components/game-player.tsx */
+.rotate-notice {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 24px;
+}
+.rotate-icon {
+  font-size: 40px;
+  line-height: 1;
+  color: var(--yellow);
+  animation: rotate-hint 1.8s ease-in-out infinite;
+}
+@keyframes rotate-hint {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(90deg);
+  }
+}
+
 /* ===== hero / library ===== */
 .av-hero {
   padding: 64px 32px 32px;

@@ -4,10 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getGameEngine, GameEngineSlot } from "@/components/games/engine-registry";
 import { useTheme } from "@/components/theme-provider";
+import { useTouchDevice } from "@/components/games/use-touch-device";
 import { useUser } from "@/components/user-provider";
 import type { Game } from "@/lib/data";
 import { getOrCreateGuestId } from "@/lib/guest-id";
+import { hasRealEngine } from "@/lib/games/registry";
 import { SKIN_IDS, SKIN_LABELS, SKINNED_GAME_SLUGS, isSkinId } from "@/lib/games/skins";
+import { TOUCH_ENABLED_GAME_SLUGS } from "@/lib/games/touch";
 import type { GameEngineState } from "@/lib/games/types";
 import { guardarPuntuacion, migrarPuntuacionesLocales } from "@/lib/supabase/score-actions";
 
@@ -30,6 +33,25 @@ const INITIAL_ENGINE_STATE: GameEngineState = { score: 0, lives: 3, level: 1 };
 const subscribeNunca = () => () => {};
 const snapshotCliente = () => true;
 const snapshotServidor = () => false;
+
+// Orientación del viewport, para el aviso "GIRÁ TU DISPOSITIVO" (SPEC 11).
+// A diferencia de `hydrated`, esto SÍ cambia en caliente cuando el jugador
+// rota el dispositivo, así que se suscribe de verdad al evento "change" del
+// MediaQueryList en vez de usar el store vacío. Snapshot de servidor `false`
+// (nunca portrait) por el mismo motivo que `hydrated`: el servidor no puede
+// evaluar matchMedia.
+const PORTRAIT_QUERY = "(orientation: portrait)";
+function subscribePortrait(onChange: () => void) {
+  const mql = window.matchMedia(PORTRAIT_QUERY);
+  mql.addEventListener("change", onChange);
+  return () => mql.removeEventListener("change", onChange);
+}
+function snapshotPortraitCliente() {
+  return window.matchMedia(PORTRAIT_QUERY).matches;
+}
+function snapshotPortraitServidor() {
+  return false;
+}
 
 // Compara campo a campo antes de reemplazar el estado: onStateChange llega
 // ~60 veces por segundo, casi siempre con el mismo valor. Un objeto nuevo en
@@ -61,6 +83,24 @@ export function GamePlayer({ game }: { game: Game }) {
   // JSX; como prop sí lo acepta.
   const Engine = getGameEngine(game.id);
   const isRealEngine = Engine !== undefined;
+  // Piloto táctil (SPEC 11): solo Asteroides está en TOUCH_ENABLED_GAME_SLUGS
+  // hoy, así que para el resto del catálogo `touchEnabled` da false y nada de
+  // lo que sigue (aviso de rotación, touch-action: none) se activa.
+  // hasRealEngine(game.id) angosta el tipo de game.id a RealGameSlug antes de
+  // consultar el array tipado — sin el guard, TypeScript rechaza pasar un
+  // `string` genérico a `.includes()` de un `readonly RealGameSlug[]`.
+  const touchEnabled = hasRealEngine(game.id) && TOUCH_ENABLED_GAME_SLUGS.includes(game.id);
+  const isTouch = useTouchDevice();
+  const isPortrait = useSyncExternalStore(
+    subscribePortrait,
+    snapshotPortraitCliente,
+    snapshotPortraitServidor,
+  );
+  // Bloquea el CRT y fuerza pausa del motor sin desmontarlo (ver el `style`
+  // condicional más abajo): así una rotación accidental a mitad de partida no
+  // pierde el progreso, a diferencia de condicionar el JSX del propio
+  // GameEngineSlot.
+  const orientationBlocked = touchEnabled && isTouch && isPortrait;
   const [engineState, setEngineState] = useState<GameEngineState>(INITIAL_ENGINE_STATE);
   const score = engineState.score;
   // Para el resto del catálogo (simulado) vidas/nivel siguen fijos/derivados
@@ -257,14 +297,48 @@ export function GamePlayer({ game }: { game: Game }) {
         </div>
       </div>
 
-      <div className="crt">
+      {orientationBlocked && (
+        <div className="crt">
+          <div className="crt-screen">
+            <div className="rotate-notice">
+              <div className="rotate-icon" aria-hidden="true">
+                ⟳
+              </div>
+              <div className="pixel neon-yellow" style={{ fontSize: 18 }}>
+                GIRÁ TU DISPOSITIVO
+              </div>
+              <div
+                className="mono"
+                style={{
+                  fontSize: 11,
+                  color: "var(--ink-dim)",
+                  marginTop: 10,
+                  letterSpacing: "0.16em",
+                }}
+              >
+                {game.title.toUpperCase()} SE JUEGA EN HORIZONTAL
+              </div>
+            </div>
+          </div>
+          <div className="crt-bottom">
+            <span className="led">SEÑAL OK</span>
+            <span>{game.title} · CRT-83 · 60 HZ</span>
+            <span>CARGA · 1MB</span>
+          </div>
+        </div>
+      )}
+
+      {/* Se mantiene montado incluso con orientationBlocked (oculto por CSS,
+          no removido del árbol): así el motor no se reinicia si el jugador
+          rota el dispositivo a mitad de partida. */}
+      <div className="crt" style={orientationBlocked ? { display: "none" } : undefined}>
         <div className="crt-screen">
           <div className="game-arena">
             {Engine ? (
               <GameEngineSlot
                 key={resetToken}
                 engine={Engine}
-                paused={paused || over}
+                paused={paused || over || orientationBlocked}
                 skin={skin}
                 onStateChange={handleStateChange}
                 onGameOver={handleGameOver}
