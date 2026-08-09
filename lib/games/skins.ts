@@ -156,4 +156,4 @@ export const SKIN_LABELS: Record<SkinId, string> = {
 // motores reales sigue con sus colores literales y cambiar de skin no haría
 // nada visible. El agente skin-designer trabaja un juego por corrida y suma
 // su slug acá al terminar.
-export const SKINNED_GAME_SLUGS: readonly string[] = ["asteroides"];
+export const SKINNED_GAME_SLUGS: readonly string[] = ["asteroides", "snake", "arkanoid"];

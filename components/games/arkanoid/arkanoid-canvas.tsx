@@ -17,7 +17,7 @@ const SOUND_SRC: Record<ArkanoidSfx, string> = {
   break: "/games/arkanoid/sounds/break-sound.mp3",
 };
 
-export function ArkanoidCanvas({ paused, onStateChange, onGameOver }: GameCanvasProps) {
+export function ArkanoidCanvas({ paused, skin, onStateChange, onGameOver }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<ArkanoidEngine | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -32,6 +32,11 @@ export function ArkanoidCanvas({ paused, onStateChange, onGameOver }: GameCanvas
   // exclusivo del teclado — mismo criterio que "shoot" en Asteroides o el input
   // de Tetris, aplicado al mouse.
   const mouseXQueuedRef = useRef<number | null>(null);
+
+  // La skin del primer render, para construir el motor ya con la paleta buena
+  // (el efecto de creación corre una sola vez y no puede depender de `skin`
+  // sin remontar el motor). Los cambios posteriores van por setSkin().
+  const skinInicialRef = useRef(skin);
 
   // Dos <audio> precargados al montar, uno por cada sfx que reporta el motor.
   // El motor nunca instancia Audio — solo dice qué sonó; este componente decide cómo.
@@ -61,12 +66,27 @@ export function ArkanoidCanvas({ paused, onStateChange, onGameOver }: GameCanvas
     canvas.height = HEIGHT * dpr;
     ctx.scale(dpr, dpr);
 
-    engineRef.current = new ArkanoidEngine(WIDTH, HEIGHT);
+    engineRef.current = new ArkanoidEngine(WIDTH, HEIGHT, skinInicialRef.current);
 
     return () => {
       engineRef.current = null;
     };
   }, []);
+
+  // Cambio de skin o de modo claro/oscuro: se reaplica sobre el MISMO motor.
+  // Nada de `key={skin}` ni de remontar el canvas — eso reiniciaría la partida
+  // (el remonte es el mecanismo de reinicio de components/game-player.tsx).
+  // Si el juego está en pausa el loop no corre, así que se repinta a mano para
+  // que el cambio se vea igual.
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    engine.setSkin(skin);
+    if (pausedRef.current) {
+      const ctx = canvasRef.current?.getContext("2d");
+      if (ctx) engine.draw(ctx);
+    }
+  }, [skin]);
 
   // Audio: instancias precargadas una única vez por montaje. Cada frame, por
   // cada entrada de getState().sfx, se reproduce un cloneNode() — mismo patrón

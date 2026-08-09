@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SnakeEngine, type SnakeInput } from "@/components/games/snake/engine";
+import { SnakeEngine, type SnakeInput, type SnakeState } from "@/components/games/snake/engine";
 import { FRUIT_ATLAS } from "@/components/games/snake/fruit-atlas";
+import type { GameSkin } from "@/lib/games/skins";
 import type { GameCanvasProps } from "@/lib/games/types";
 
 const WIDTH = 800;
@@ -16,7 +17,38 @@ const DOWN: Direction = { dx: 0, dy: 1 };
 const LEFT: Direction = { dx: -1, dy: 0 };
 const RIGHT: Direction = { dx: 1, dy: 0 };
 
-export function SnakeCanvas({ paused, onStateChange, onGameOver }: GameCanvasProps) {
+// Dibuja el sprite de la fruta encima del plato que ya pintó el motor.
+//
+// fruits.png es arte a todo color y NO se retiñe con la skin: el sprite se dibuja
+// siempre igual en las 6 combinaciones (ese es su "tratamiento fijo"). Lo único
+// que aporta la paleta es el halo, cuyo color sale de ramp[0] — el mismo campo
+// con el que el motor pinta el aro del plato — y cuyo radio es skin.glow, así que
+// en modo claro (glow 0) desaparece solo, sin caso especial.
+function dibujarFruta(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  state: SnakeState,
+  skin: GameSkin,
+) {
+  const rect = FRUIT_ATLAS[state.foodSprite];
+  ctx.save();
+  ctx.shadowColor = skin.ramp[0];
+  ctx.shadowBlur = skin.glow;
+  ctx.drawImage(
+    img,
+    rect.x,
+    rect.y,
+    rect.w,
+    rect.h,
+    state.foodCell.x * CELL,
+    state.foodCell.y * CELL,
+    CELL,
+    CELL,
+  );
+  ctx.restore();
+}
+
+export function SnakeCanvas({ paused, skin, onStateChange, onGameOver }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<SnakeEngine | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -35,6 +67,15 @@ export function SnakeCanvas({ paused, onStateChange, onGameOver }: GameCanvasPro
   // espeja la misma regla de forma independiente, arrancando en la misma
   // dirección inicial que reset() en engine.ts (mirando a la derecha).
   const directionRef = useRef<Direction>(RIGHT);
+  // La skin del primer render, para construir el motor ya con la paleta buena
+  // (el efecto de creación corre una sola vez y no puede depender de `skin` sin
+  // remontar el motor). Los cambios posteriores van por setSkin().
+  const skinInicialRef = useRef(skin);
+  // Espejo de la skin vigente para el loop: el motor ya la tiene por setSkin(),
+  // pero la fruta la dibuja este componente. Va por ref y no por dependencia del
+  // efecto del loop para no cancelar y reagendar el requestAnimationFrame en cada
+  // cambio de paleta.
+  const skinRef = useRef(skin);
 
   // Precarga de fruits.png: el loop no arranca hasta que resuelve (assetsReady).
   const [assetsReady, setAssetsReady] = useState(false);
@@ -64,12 +105,31 @@ export function SnakeCanvas({ paused, onStateChange, onGameOver }: GameCanvasPro
     canvas.height = HEIGHT * dpr;
     ctx.scale(dpr, dpr);
 
-    engineRef.current = new SnakeEngine(WIDTH, HEIGHT);
+    engineRef.current = new SnakeEngine(WIDTH, HEIGHT, skinInicialRef.current);
 
     return () => {
       engineRef.current = null;
     };
   }, []);
+
+  // Cambio de skin o de modo claro/oscuro: se reaplica sobre el MISMO motor.
+  // Nada de `key={skin}` ni de remontar el canvas — eso reiniciaría la partida
+  // (el remonte es el mecanismo de reinicio de components/game-player.tsx).
+  // Si el juego está en pausa el loop no corre, así que se repinta a mano
+  // (motor + fruta) para que el cambio se vea igual.
+  useEffect(() => {
+    skinRef.current = skin;
+    const engine = engineRef.current;
+    if (!engine) return;
+    engine.setSkin(skin);
+    if (!pausedRef.current) return;
+
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx) return;
+    engine.draw(ctx);
+    const img = imgRef.current;
+    if (img?.complete) dibujarFruta(ctx, img, engine.getState(), skin);
+  }, [skin]);
 
   // Precarga de la imagen de frutas. El motor nunca posee ni crea este
   // HTMLImageElement — solo reporta foodCell/foodSprite en su estado; dibujar
@@ -144,20 +204,7 @@ export function SnakeCanvas({ paused, onStateChange, onGameOver }: GameCanvasPro
         const state = engine.getState();
 
         const img = imgRef.current;
-        if (img) {
-          const rect = FRUIT_ATLAS[state.foodSprite];
-          ctx.drawImage(
-            img,
-            rect.x,
-            rect.y,
-            rect.w,
-            rect.h,
-            state.foodCell.x * CELL,
-            state.foodCell.y * CELL,
-            CELL,
-            CELL,
-          );
-        }
+        if (img) dibujarFruta(ctx, img, state, skinRef.current);
 
         onStateChangeRef.current({ score: state.score, level: state.level, status: state.status });
 

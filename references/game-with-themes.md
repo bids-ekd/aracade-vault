@@ -8,10 +8,10 @@ el usuario indique y actualiza solo su fila. Se auto-corrige en cada corrida con
 
 | Juego      | clasico/dark | clasico/light | neon/dark | neon/light | retro/dark | retro/light | Última revisión |
 | ---------- | ------------ | ------------- | --------- | ---------- | ---------- | ----------- | --------------- |
-| snake      | ❌           | ❌            | ❌        | ❌         | ❌         | ❌          | —               |
+| snake      | ✅           | ✅            | ✅        | ✅         | ✅         | ✅          | 2026-08-09      |
 | tetris     | ❌           | ❌            | ❌        | ❌         | ❌         | ❌          | —               |
 | asteroides | ✅           | ✅            | ✅        | ✅         | ✅         | ✅          | 2026-08-09      |
-| arkanoid   | ❌           | ❌            | ❌        | ❌         | ❌         | ❌          | —               |
+| arkanoid   | ✅           | ✅            | ✅        | ✅         | ✅         | ✅          | 2026-08-09      |
 
 ## Paletas
 
@@ -26,6 +26,11 @@ Invariante de `ramp` (7 entradas en las tres skins): las **3 primeras** no colis
 Contraste medido con la fórmula WCAG 2.1 contra el `bg` de cada entrada. `ink` y `accent` se usan
 como texto del HUD interno del canvas, así que ambos cumplen ≥ 4.5:1; `primary`, `danger` y todas
 las entradas de `ramp` cumplen ≥ 3:1.
+
+**snake** (2026-08-09) reutilizó las tres skins tal cual, sin retocar un solo hex, y midió además
+dos cosas que no estaban registradas: `inkDim` cumple ≥ 6.12:1 contra su `bg` en las 6
+combinaciones (por eso puede usarse como texto secundario del HUD interno, no solo como detalle), y
+`ramp[0]` cumple ≥ 5.01:1 en las 6.
 
 ### clasico
 
@@ -66,16 +71,21 @@ trazo grueso.
 
 ## Pendientes
 
-- [ ] **snake** — clasico/neon/retro, dark y light — aún no trabajado; 5 sitios de color en
-      `engine.ts` + el atlas `public/games/snake/fruits.png`, que no se retiñe con la paleta —
-      2026-08-09
+- [x] **snake** — 3 skins × 2 modos completas; el atlas `fruits.png` se resolvió sin retinte (ver
+      Decisiones) — 2026-08-09
 - [ ] **tetris** — clasico/neon/retro, dark y light — aún no trabajado; 20 literales, la tabla
       `COLORS` por pieza se convierte en `ramp` y el HUD interno duplica `#00f5ff`/`#00ff88`/`#f5ff00`
       — 2026-08-09
 - [x] **asteroides** — 3 skins × 2 modos completas — 2026-08-09
-- [ ] **arkanoid** — clasico/neon/retro, dark y light — aún no trabajado; `type BlockColor` (union
-      de nombres CSS) hay que refactorizarlo a índice numérico sobre `ramp` y actualizar las 5
-      definiciones de `LEVELS` — 2026-08-09
+- [x] **arkanoid** — 3 skins × 2 modos completas; `BlockColor` refactorizado a `BlockTone` (índice
+      sobre `ramp`) y las 5 definiciones de `LEVELS` renumeradas — 2026-08-09
+- [ ] **plataforma** — la invariante de `ramp` documentada en `lib/games/skins.ts` ("las 3 primeras
+      entradas no colisionan con `primary`/`accent`/`danger`") está **violada en retro/light**:
+      `ramp[2]` es `#8a4b00`, exactamente `primary`. No se tocó la paleta en esta corrida porque
+      asteroides ya la consume (el asteroide de tamaño 3 quedaría del color de la nave) y las paletas
+      son de plataforma, no de un juego. Arkanoid lo esquiva por render (aro de `bg` en la pelota).
+      Decidir si se corrige el hex o se relaja la invariante antes de skinear tetris, que indexa la
+      rampa entera — 2026-08-09
 
 ## Decisiones
 
@@ -118,3 +128,64 @@ trazo grueso.
   `key={skin}`: remontar el canvas es el mecanismo de reinicio de `components/game-player.tsx`, así
   que cambiar de skin a media partida no cuesta la partida. Si el juego está en pausa el canvas
   repinta a mano, porque el loop no corre. — 2026-08-09
+- **snake** — `public/games/snake/fruits.png` **no se retiñe**: ni atlas por skin ni `ctx.filter`.
+  Las 22 frutas son arte a todo color cuya identidad ES el color (un plátano que no es amarillo deja
+  de leerse como plátano; en `retro` toda la fruta quedaría del mismo ámbar y las 22 se volverían
+  indistinguibles entre sí). Un atlas por skin, además, exigiría producir 3 PNG nuevos que no se
+  derivan del material de `references/sources-assets/`. El tratamiento fijo elegido: el sprite se
+  dibuja idéntico en las 6 combinaciones y **la paleta se adueña de lo que lo rodea** — el motor
+  pinta debajo un "plato" (relleno `grid` + aro `ramp[0]`) y el canvas le agrega un halo
+  `shadowColor = ramp[0]` con radio `skin.glow`. Se eligió `ramp[0]` y no `accent` porque la
+  invariante de rampa garantiza que no colisiona con `primary`/`accent`/`danger`, es decir con la
+  serpiente. — 2026-08-09
+- **snake** — El plato no es solo decorativo: resuelve el caso malo del modo claro, donde una fruta
+  pálida (ajo, champiñón, coliflor) se perdía contra `#f2f3fa`/`#f5ecd8`. Como el sprite no puede
+  cambiar, el contraste se aporta por detrás. — 2026-08-09
+- **snake** — Cabeza `accent` y cuerpo `primary`, **más dos ojos calados en `bg`**. El color solo no
+  alcanzaba: medido, `accent` vs `primary` es casi isoluminante en 3 de las 6 combinaciones
+  (neon/light 1.00:1, retro/light 1.04:1, clasico/dark 1.13:1), así que distinguir la cabeza por
+  tono fallaría ahí y con cualquier daltonismo. Los ojos hacen que la diferencia sea de forma. Dato
+  a tener en cuenta por Tetris/Arkanoid: `accent` y `primary` NO son un par fiable para separar dos
+  entidades que deban distinguirse sí o sí. — 2026-08-09
+- **snake** — El borde del tablero se dibuja con `danger`. En Snake el límite mata (no hay
+  wrap-around, a diferencia de Asteroides) y en la versión sin skin era invisible: el marco explicita
+  la regla. Es solo pintura, la colisión la sigue resolviendo `update()` contra `gridW`/`gridH`. —
+  2026-08-09
+- **snake** — El HUD interno pasó a dos niveles: etiquetas ("Score:", "Nivel:") en `inkDim` y cifras
+  en `ink`. `inkDim` da ≥ 6.12:1 contra `bg` en las 6 combinaciones, así que sigue siendo texto
+  legible y no solo "detalle sutil". — 2026-08-09
+- **snake** — La fruta la dibuja el canvas, pero su skin viaja por un `skinRef` en vez de entrar como
+  dependencia del efecto del loop: ponerla en las deps cancelaría y reagendaría el
+  `requestAnimationFrame` en cada cambio de paleta. El motor ya la recibe por `setSkin()`. —
+  2026-08-09
+- **arkanoid** — `type BlockColor` (union de nombres CSS: `"red" | "cyan" | …`, que el original usaba
+  tal cual como `fillStyle`) pasó a `type BlockTone = 0|1|2|3|4|5|6`, índice sobre `ramp`. El union
+  tenía exactamente 7 nombres y la rampa tiene 7 entradas, así que el mapeo es 1:1
+  (`red→0 yellow→1 cyan→2 magenta→3 hotpink→4 green→5 gray→6`) y las 5 definiciones de `LEVELS`
+  conservan la distribución del original intacta: solo cambian nombres por índices. Un bloque ya no
+  sabe de qué color es, solo de qué slot de la paleta. — 2026-08-09
+- **arkanoid** — La pelota lleva un aro de `bg` de 2 px alrededor del relleno `primary`. Es
+  obligatorio, no decorativo: en `neon` y `retro` hay entradas de la rampa **idénticas** a `primary`
+  (retro/dark `ramp[3]`, retro/light `ramp[2]`, neon `ramp[5]`), así que sin el aro la pelota
+  desaparecería al cruzar un bloque de ese tono. El aro la separa en las 6 combinaciones sin tocar
+  las paletas de plataforma, que asteroides ya consume. — 2026-08-09
+- **arkanoid** — El paddle es `accent` y la pelota `primary`, no al revés: así `clasico` reproduce
+  exactamente el look de hoy (paddle cian `#00f5ff`, pelota casi blanca) y la skin baseline sigue
+  siendo de coste cero. Los iconos de vida del HUD también van en `accent` — lo que te queda en
+  stock son paddles. — 2026-08-09
+- **arkanoid** — Los bloques se dibujan **sin glow** aunque la skin declare uno: son hasta 60
+  rectángulos por frame y en `neon` (glow 18) el halo los funde en una mancha, además de costar un
+  `shadowBlur` por bloque. El brillo se reserva para lo que se mueve: pelota, paddle y explosión. —
+  2026-08-09
+- **arkanoid** — Cada bloque se rellena con 1 px de sangría, para que quede una junta de `bg` entre
+  bloques contiguos del mismo tono; sin ella una fila entera se lee como una barra sólida y no se
+  distingue cuántos bloques quedan. — 2026-08-09
+- **arkanoid** — Se usan los dos campos que el original no tenía: `grid` dibuja la celosía 10×6 del
+  muro (visible también donde ya no queda bloque, así el campo se lee como grilla con el nivel casi
+  limpio) más las 3 paredes de rebote, y `danger` la línea de muerte del borde inferior — la única
+  arista que no rebota, por donde se pierde la vida. `inkDim` queda sin usar: mide 6.12–8.12:1 en las
+  6 combinaciones (sirve como texto), pero el HUD del original no tiene jerarquía secundaria que lo
+  justifique. — 2026-08-09
+- **arkanoid** — La celosía de `grid` mide ~1.1–1.3:1 contra `bg` en las 6 combinaciones y eso es
+  correcto: `grid` es detalle decorativo, no una entidad de juego, y el criterio de ≥ 3:1 no le
+  aplica. Subirla rompería el "detalle sutil" que pide el contrato. — 2026-08-09
