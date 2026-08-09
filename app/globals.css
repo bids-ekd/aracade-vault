@@ -62,6 +62,12 @@ html,
 body {
   height: 100%;
   margin: 0;
+  /* Defensa en las dos capas: algunos navegadores móviles (Samsung Internet
+     incluido) no propagan de forma confiable el overflow-x: hidden de body
+     hacia el viewport — un elemento fixed que se posiciona fuera de pantalla
+     por transform (p. ej. .av-mobile-panel cerrado) puede seguir agrandando
+     el scrollWidth del documento y descentrar todo lo demás. */
+  overflow-x: hidden;
 }
 
 body {
@@ -71,7 +77,6 @@ body {
   font-size: 14px;
   line-height: 1.5;
   letter-spacing: 0.01em;
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -482,101 +487,149 @@ a {
   }
 }
 
-/* ===== touch controls (overlay táctil, ver components/games/touch-controls.tsx) ===== */
-/* Overlay puro: el contenedor no captura toques (pointer-events: none), solo
-   cada .touch-btn individual, para no tapar el resto de la pantalla. */
+/* ===== touch controls (panel táctil, ver components/games/touch-controls.tsx) =====
+   Layout tipo GameBoy (SPEC 11, revisado durante la implementación):
+   pantalla arriba, cuerpo de consola con botones abajo — NO un overlay sobre
+   el canvas, y NO adentro de .crt. Por eso .touch-controls es un contenedor
+   en flujo normal (sin position: absolute ni pointer-events: none): el
+   propio nodo que lo aloja (.game-console-controls, ver más abajo) ya vive
+   fuera de .crt, montado por game-player.tsx.
+
+   Estética de gamepad físico (2ª revisión de diseño, feedback del usuario:
+   los botones circulares sueltos "se ven básicos"): el D-pad es una cruz de
+   verdad — 3 teclas con forma de flecha (clip-path) montadas SOBRE una placa
+   circular, no 3 círculos flotando con gap — y el botón de disparo tiene
+   relieve tipo tecla (gradiente + "labio" de sombra inferior) en vez de un
+   simple aro con glow. */
 .touch-controls {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  pointer-events: none;
+  gap: 16px;
+  width: 100%;
 }
 .touch-controls-side {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+}
+/* Placa circular del D-pad: contiene el grid de 3×2 con "up"/"left"/"right"
+   como celdas nombradas (Asteroides no usa "down" ni "center" — quedan
+   definidas en TouchButtonConfig.position para cuando un motor futuro, p.
+   ej. Snake, necesite las 4 direcciones). El hub central es decorativo
+   (::after), separa visualmente los 3 brazos y disimula el cuarto que falta. */
+.touch-controls-left {
+  position: relative;
+  /* Ancho y alto iguales (no `padding` parejo sobre un grid 3×2, que daría
+     una elipse): el grid de 44px×3 / 44px×2 se centra adentro de una placa
+     de verdad circular. */
+  width: 150px;
+  height: 150px;
+  display: grid;
+  grid-template-columns: 44px 44px 44px;
+  grid-template-rows: 44px 44px;
+  grid-template-areas:
+    ".    up    ."
+    "left .     right";
+  gap: 3px;
+  place-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #202028, #08080b 72%);
+  border: 1px solid rgba(0, 245, 255, 0.2);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 5px #0b0b0f;
+}
+.touch-controls-left::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #16161c;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.9);
+  transform: translate(-50%, -50%);
   pointer-events: none;
 }
-.touch-controls-left {
-  flex-wrap: wrap;
-  max-width: 190px;
-}
 .touch-btn {
-  width: 56px;
-  height: 56px;
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--pixel);
-  font-size: 18px;
+  font-size: 15px;
   color: var(--cyan);
-  background: rgba(5, 5, 10, 0.45);
-  border: 1px solid var(--cyan);
-  border-radius: 50%;
-  box-shadow: inset 0 0 8px rgba(0, 245, 255, 0.2);
-  pointer-events: auto;
+  background: linear-gradient(180deg, #2b2b34 0%, #16161c 100%);
+  border: 1px solid rgba(0, 245, 255, 0.3);
+  box-shadow:
+    0 3px 0 #050507,
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   transition:
     transform 80ms ease,
-    box-shadow 120ms ease,
+    box-shadow 80ms ease,
     background 120ms ease;
 }
+/* Presión tipo tecla física: baja y "pierde" el labio inferior, en vez de
+   solo agrandar un glow (más parecido a apretar un botón real). */
 .touch-btn:active {
-  transform: scale(0.92);
-  background: rgba(0, 245, 255, 0.25);
+  transform: translateY(2px);
+  background: linear-gradient(180deg, #23232b 0%, #0f0f14 100%);
   box-shadow:
-    0 0 14px rgba(0, 245, 255, 0.55),
-    inset 0 0 10px rgba(0, 245, 255, 0.4);
+    0 1px 0 #050507,
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 10px rgba(0, 245, 255, 0.4);
+}
+/* Cada brazo de la cruz recorta su celda (44×44) con clip-path en forma de
+   flecha/punta de lanza apuntando hacia su dirección — es lo que hace que
+   se lea como un D-pad de verdad y no como 3 botones sueltos. */
+.touch-controls-left .touch-btn {
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+}
+.touch-controls-left .touch-btn[data-position="up"] {
+  clip-path: polygon(50% 4%, 88% 34%, 88% 100%, 12% 100%, 12% 34%);
+}
+.touch-controls-left .touch-btn[data-position="left"] {
+  clip-path: polygon(4% 50%, 34% 12%, 100% 12%, 100% 88%, 34% 88%);
+}
+.touch-controls-left .touch-btn[data-position="right"] {
+  clip-path: polygon(96% 50%, 66% 88%, 0% 88%, 0% 12%, 66% 12%);
+}
+/* Botón de disparo: tecla circular grande, brillo tipo plástico (highlight
+   arriba a la izquierda) + labio de sombra magenta oscuro abajo, montada
+   sobre su propia placa — mismo lenguaje que el D-pad, en la paleta magenta
+   que ya usa el resto de la UI para "acción/peligro". */
+.touch-controls-right {
+  padding: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #201018, #08080b 72%);
+  border: 1px solid rgba(255, 0, 110, 0.2);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.85);
 }
 .touch-controls-right .touch-btn {
-  width: 68px;
-  height: 68px;
-  font-size: 22px;
-  color: var(--magenta);
-  border-color: var(--magenta);
-  box-shadow: inset 0 0 8px rgba(255, 0, 110, 0.2);
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  font-size: 20px;
+  color: #fff;
+  background: radial-gradient(circle at 35% 28%, #ff6fb0 0%, #d1006a 55%, #8f0048 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 4px 0 #6e0038,
+    inset 0 2px 3px rgba(255, 255, 255, 0.35);
 }
 .touch-controls-right .touch-btn:active {
-  background: rgba(255, 0, 110, 0.25);
+  transform: translateY(3px);
+  background: radial-gradient(circle at 35% 28%, #e85fa0 0%, #b8005c 55%, #7a0040 100%);
   box-shadow:
-    0 0 14px rgba(255, 0, 110, 0.55),
-    inset 0 0 10px rgba(255, 0, 110, 0.4);
-}
-
-/* ===== rotate notice (SPEC 11 — aviso de orientación en touch) ===== */
-/* Ocupa el mismo .crt-screen que reemplaza, ver components/game-player.tsx */
-.rotate-notice {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  text-align: center;
-  padding: 24px;
-}
-.rotate-icon {
-  font-size: 40px;
-  line-height: 1;
-  color: var(--yellow);
-  animation: rotate-hint 1.8s ease-in-out infinite;
-}
-@keyframes rotate-hint {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-  50% {
-    transform: rotate(90deg);
-  }
+    0 1px 0 #6e0038,
+    inset 0 2px 3px rgba(255, 255, 255, 0.2),
+    0 0 14px rgba(255, 0, 110, 0.55);
 }
 
 /* ===== hero / library ===== */
@@ -1246,6 +1299,7 @@ a {
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 /* selector de skin del reproductor: UI de plataforma, no del motor. Solo se
@@ -1363,6 +1417,49 @@ a {
   align-items: center;
   justify-content: center;
   background: radial-gradient(circle at 50% 50%, #0a0030 0%, #000 70%), #000;
+}
+/* SPEC 11: modificador aplicado por game-player.tsx solo cuando el panel de
+   controles está realmente activo (slug en TOUCH_ENABLED_GAME_SLUGS Y
+   dispositivo táctil — no alcanza con lo primero, ver `touchActive` en
+   game-player.tsx). Evita que un toque sobre el canvas dispare
+   scroll/pinch-zoom accidental. El panel de botones NO vive acá adentro
+   (ver .game-console-controls más abajo) — .game-arena sigue siendo el
+   mismo overlay absoluto de siempre, esto es lo único que cambia. */
+.game-arena-touch {
+  touch-action: none;
+}
+/* Cuerpo de la consola: FUERA de .crt (layout tipo GameBoy — pantalla arriba,
+   caja de botones abajo, piezas separadas de verdad, no una sub-sección del
+   mismo bezel). game-player.tsx lo monta como portal target (ver
+   touch-panel-portal.tsx); solo existe mientras el panel está activo. */
+.game-console-controls {
+  position: relative;
+  margin-top: 16px;
+  padding: 18px 24px;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #15151b 0%, #0c0c11 100%);
+  border: 1px solid var(--line);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 4px #1b1b22,
+    0 20px 50px -20px rgba(0, 245, 255, 0.25);
+}
+/* Rótulo tipo "marca del accesorio" — el mismo lenguaje que el cartel de
+   .crt-bottom (SEÑAL OK / CRT-83 / 60 HZ), acá aplicado al cuerpo de la
+   consola para reforzar que es una pieza física separada de la pantalla. */
+.game-console-controls::before {
+  content: "TOUCH · AV-1";
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--pixel);
+  font-size: 7px;
+  letter-spacing: 0.2em;
+  color: var(--ink-faint);
 }
 .game-arena .grid-floor {
   position: absolute;
@@ -1522,6 +1619,80 @@ a {
 @keyframes caret {
   50% {
     border-color: transparent;
+  }
+}
+
+/* SPEC 11 — pulido responsive de la pantalla de juego para viewports
+   táctiles chicos. Asteroides se juega en cualquier orientación (no hay
+   bloqueo de portrait), pero en landscape la altura disponible de un
+   teléfono baja a sus ~320–414px de ancho típico en portrait — por eso la
+   condición es sobre max-height, no sobre max-width ni sobre orientación: un
+   teléfono en portrait normal (~700px+ de alto) nunca matchea esto, así que
+   no hace falta filtrar por orientation. Acotado a
+   .av-player/.player-hud/.crt/.crt-screen/panel de controles/modal de fin,
+   igual que pide la spec — el resto del sitio ya tiene sus propias media
+   queries (ver @media (max-width: 720px) más abajo). */
+@media (max-height: 430px) {
+  .av-player {
+    margin: 10px auto;
+    padding: 0 10px 16px;
+  }
+  .player-hud {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    gap: 10px;
+  }
+  .hud-stat .v {
+    font-size: 13px;
+  }
+  .hud-actions .btn {
+    padding: 8px 12px;
+    font-size: 9px;
+  }
+  .crt {
+    padding: 10px;
+    border-radius: 14px;
+  }
+  .crt-bottom {
+    margin-top: 8px;
+    font-size: 7px;
+  }
+  .game-console-controls {
+    margin-top: 8px;
+    padding: 10px 14px;
+    min-height: 0;
+  }
+  .touch-controls-right {
+    padding: 8px;
+  }
+  .touch-controls-left {
+    width: 130px;
+    height: 130px;
+    grid-template-columns: 38px 38px 38px;
+    grid-template-rows: 38px 38px;
+    gap: 2px;
+  }
+  .touch-btn {
+    font-size: 13px;
+  }
+  .touch-controls-right .touch-btn {
+    width: 52px;
+    height: 52px;
+    font-size: 17px;
+  }
+  .modal {
+    padding: 18px;
+  }
+  .modal h2 {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  .modal .final {
+    font-size: 26px;
+    margin: 8px 0 4px;
+  }
+  .modal .input-row input {
+    height: 38px;
   }
 }
 
