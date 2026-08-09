@@ -18,6 +18,16 @@ existentes están en estado `Implemented`.
 
 ## Skills y flujo de trabajo
 
+### Agentes
+
+- **`game-planner`** (`.claude/agents/game-planner.md`) — decide **qué** juego agregar a
+  continuación. Evalúa candidatos (promover una ficha mock o un juego nuevo) contra el contrato del
+  motor, el HUD, el modelo de input y los huecos de catálogo; mantiene el To Do de sugerencias en
+  `references/game-suggetions-todo.md` y termina recomendando `/spec-juego <slug>`. No escribe
+  código ni specs.
+
+Flujo completo para un juego nuevo: `game-planner` → `/spec-juego` → `/spec-impl`.
+
 Skills instaladas en `.claude/skills/` y `.agents/skills/`:
 
 - **`/spec`** — diseña una spec nueva (`specs/NN-slug.md`, estado `Draft`). No escribe código.
@@ -27,7 +37,7 @@ Skills instaladas en `.claude/skills/` y `.agents/skills/`:
   real y leaderboard**. Usa siempre esta, no `/spec`, cuando la funcionalidad sea un juego: aplica
   el checklist de portabilidad (globals del DOM, reloj, modelo de input, HUD, overlays, assets,
   restart, `dt`) contra el código original en `references/started-games/`. Es la ruta probada para
-  los últimos tres juegos (Tetris, Arkanoid, Snake). 
+  los últimos tres juegos (Tetris, Arkanoid, Snake).
 - **`/frontend-design`** — úsala siempre para diseñar interfaces de usuario.
 
 `/spec` y `/spec-impl` vienen de https://github.com/Klerith/fernando-skills
@@ -104,6 +114,8 @@ specs/                    01..10, todas Implemented
 references/               material de origen, NO es parte de la app (lint lo ignora)
   started-games/          juegos originales en JS vanilla, fuente de los ports
   sources-assets/         sprites y assets crudos
+  implemented-games.md    catálogo de juegos con motor real (fuente para game-planner)
+  game-suggetions-todo.md To Do de sugerencias de juego, mantenido por game-planner
 ```
 
 ## Arquitectura
@@ -223,6 +235,7 @@ hace =====`** que explica _por qué_ está partido así. Si tocas uno de esos ar
   actualizado ese comentario — son la memoria de las restricciones de Next.js que motivaron cada
   separación.
 - `references/` es material de origen de solo lectura: no lo edites, no lo importes desde la app, y
-  está fuera de ESLint y del hook de formato.
+  está fuera de ESLint y del hook de formato. Única excepción: `game-suggetions-todo.md`, que
+  `game-planner` sí actualiza — es su memoria persistente, no material de origen.
 - Variables de entorno en `.env.example`: `RESEND_API_KEY`, `RESEND_TO_EMAIL`,
   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
