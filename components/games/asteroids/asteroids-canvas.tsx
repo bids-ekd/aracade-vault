@@ -2,13 +2,26 @@
 
 import { useEffect, useRef } from "react";
 import { AsteroidsEngine, type AsteroidsInput } from "@/components/games/asteroids/engine";
+import { TouchControls, type TouchButtonConfig } from "@/components/games/touch-controls";
+import { useTouchDevice } from "@/components/games/use-touch-device";
 import type { GameCanvasProps } from "@/lib/games/types";
 
 const WIDTH = 800;
 const HEIGHT = 600;
 const KEY_CODES = ["ArrowLeft", "ArrowRight", "ArrowUp", "Space"];
 
+// Piloto del patrón táctil (SPEC 11): mismo AsteroidsInput que ya consume el
+// teclado, engine.ts no sabe que estos botones existen. `id` es un string
+// libre de este juego, no un enum compartido — ver touch-controls.tsx.
+const ASTEROIDS_TOUCH_BUTTONS: TouchButtonConfig[] = [
+  { id: "rotate-left", label: "◄", ariaLabel: "Rotar izquierda", side: "left" },
+  { id: "rotate-right", label: "►", ariaLabel: "Rotar derecha", side: "left" },
+  { id: "thrust", label: "▲", ariaLabel: "Empuje", side: "left" },
+  { id: "shoot", label: "●", ariaLabel: "Disparo", side: "right" },
+];
+
 export function AsteroidsCanvas({ paused, skin, onStateChange, onGameOver }: GameCanvasProps) {
+  const isTouch = useTouchDevice();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<AsteroidsEngine | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -139,11 +152,39 @@ export function AsteroidsCanvas({ paused, skin, onStateChange, onGameOver }: Gam
     };
   }, [paused]);
 
+  // Escriben sobre los mismos heldRef/shootQueuedRef que ya alimenta el
+  // teclado (ver los handlers de keydown/keyup más arriba): el disparo es
+  // edge-triggered (se encola una sola vez en onPress, onRelease lo ignora),
+  // igual que Space sin repeat. Mientras está en pausa se ignora, igual que
+  // el teclado.
+  const handleTouchPress = (id: string) => {
+    if (pausedRef.current) return;
+    if (id === "rotate-left") heldRef.current.left = true;
+    else if (id === "rotate-right") heldRef.current.right = true;
+    else if (id === "thrust") heldRef.current.thrust = true;
+    else if (id === "shoot") shootQueuedRef.current = true;
+  };
+  const handleTouchRelease = (id: string) => {
+    if (pausedRef.current) return;
+    if (id === "rotate-left") heldRef.current.left = false;
+    else if (id === "rotate-right") heldRef.current.right = false;
+    else if (id === "thrust") heldRef.current.thrust = false;
+  };
+
   return (
-    <canvas
-      ref={canvasRef}
-      aria-label="Asteroides"
-      style={{ width: "100%", height: "100%", display: "block" }}
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        aria-label="Asteroides"
+        style={{ width: "100%", height: "100%", display: "block" }}
+      />
+      {isTouch && (
+        <TouchControls
+          buttons={ASTEROIDS_TOUCH_BUTTONS}
+          onPress={handleTouchPress}
+          onRelease={handleTouchRelease}
+        />
+      )}
+    </>
   );
 }
