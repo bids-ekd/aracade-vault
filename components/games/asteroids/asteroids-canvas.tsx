@@ -8,7 +8,7 @@ const WIDTH = 800;
 const HEIGHT = 600;
 const KEY_CODES = ["ArrowLeft", "ArrowRight", "ArrowUp", "Space"];
 
-export function AsteroidsCanvas({ paused, onStateChange, onGameOver }: GameCanvasProps) {
+export function AsteroidsCanvas({ paused, skin, onStateChange, onGameOver }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<AsteroidsEngine | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -18,6 +18,10 @@ export function AsteroidsCanvas({ paused, onStateChange, onGameOver }: GameCanva
   const pausedRef = useRef(paused);
   const heldRef = useRef({ left: false, right: false, thrust: false });
   const shootQueuedRef = useRef(false);
+  // La skin del primer render, para construir el motor ya con la paleta buena
+  // (el efecto de creación corre una sola vez y no puede depender de `skin`
+  // sin remontar el motor). Los cambios posteriores van por setSkin().
+  const skinInicialRef = useRef(skin);
 
   // Callbacks siempre frescos sin forzar que el loop se recree en cada render.
   const onStateChangeRef = useRef(onStateChange);
@@ -43,12 +47,27 @@ export function AsteroidsCanvas({ paused, onStateChange, onGameOver }: GameCanva
     canvas.height = HEIGHT * dpr;
     ctx.scale(dpr, dpr);
 
-    engineRef.current = new AsteroidsEngine(WIDTH, HEIGHT);
+    engineRef.current = new AsteroidsEngine(WIDTH, HEIGHT, skinInicialRef.current);
 
     return () => {
       engineRef.current = null;
     };
   }, []);
+
+  // Cambio de skin o de modo claro/oscuro: se reaplica sobre el MISMO motor.
+  // Nada de `key={skin}` ni de remontar el canvas — eso reiniciaría la partida
+  // (el remonte es el mecanismo de reinicio de components/game-player.tsx).
+  // Si el juego está en pausa el loop no corre, así que se repinta a mano para
+  // que el cambio se vea igual.
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    engine.setSkin(skin);
+    if (pausedRef.current) {
+      const ctx = canvasRef.current?.getContext("2d");
+      if (ctx) engine.draw(ctx);
+    }
+  }, [skin]);
 
   // Teclado: mientras está pausado, el input se ignora por completo (solo se
   // frena el scroll de la página con preventDefault).

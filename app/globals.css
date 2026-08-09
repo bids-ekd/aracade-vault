@@ -21,6 +21,32 @@
   --mono: var(--font-jetbrains-mono), var(--font-courier-prime), "Courier New", monospace;
 }
 
+/* ===== modo claro =====
+   El tema oscuro de :root sigue siendo el DEFAULT (ningún color se define
+   solo acá): este bloque únicamente redefine los tokens de color cuando
+   <html data-theme="light">. El atributo lo pone el script inline de
+   app/layout.tsx antes del primer paint y lo mantiene
+   components/theme-provider.tsx (persistido en localStorage, clave av_theme).
+   Los hex son la contraparte CSS de la paleta clasico/light de
+   lib/games/skins.ts — si cambia una, cambiar la otra a mano. */
+:root[data-theme="light"] {
+  --bg: #f2f3fa;
+  --bg-2: #e8eaf4;
+  --bg-3: #dcdfee;
+  --ink: #12142a;
+  --ink-dim: #464b6b;
+  --ink-faint: #7a7f9c;
+  --cyan: #00697a;
+  --magenta: #b8004f;
+  --yellow: #7a7000;
+  --green: #0a7a45;
+  --gold: #8a6100;
+  --silver: #5a6474;
+  --bronze: #8a4a1c;
+  --line: rgba(0, 105, 122, 0.28);
+  --line-2: rgba(18, 20, 42, 0.1);
+}
+
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--ink);
@@ -279,6 +305,30 @@ a {
 }
 .av-nav .hamburger {
   display: none;
+}
+
+/* toggle claro/oscuro: los dos iconos van siempre en el DOM y el tema activo
+   decide cuál se ve, para no depender del estado de React (que en la carga
+   inicial todavía no sabe qué dejó el script inline en <html data-theme>) */
+.theme-toggle {
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1;
+  margin-left: 12px;
+}
+.theme-toggle .when-light {
+  display: none;
+}
+:root[data-theme="light"] .theme-toggle .when-dark {
+  display: none;
+}
+:root[data-theme="light"] .theme-toggle .when-light {
+  display: inline;
+}
+.av-mobile-panel .theme-toggle {
+  margin: 0 0 14px;
+  align-self: flex-start;
 }
 
 @media (max-width: 840px) {
@@ -1098,6 +1148,35 @@ a {
 .hud-actions {
   display: flex;
   gap: 10px;
+  align-items: center;
+}
+
+/* selector de skin del reproductor: UI de plataforma, no del motor. Solo se
+   muestra para los slugs de SKINNED_GAME_SLUGS (lib/games/skins.ts). */
+.skin-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.skin-picker .l {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.skin-picker select {
+  font-family: var(--pixel);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  padding: 10px 12px;
+  background: var(--bg-3);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+.skin-picker select:focus-visible {
+  outline: 1px solid var(--cyan);
 }
 
 .crt {

@@ -4,6 +4,30 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useUser } from "@/components/user-provider";
+import { useTheme } from "@/components/theme-provider";
+
+// Toggle claro/oscuro. Los dos iconos se renderizan siempre y es el CSS
+// (:root[data-theme="…"] .theme-toggle .when-…) el que muestra uno u otro:
+// si el icono dependiera del estado de React habría un desajuste de
+// hidratación cuando el script inline ya dejó <html> en modo claro.
+function ThemeToggle({ className }: { className?: string }) {
+  const { toggleMode } = useTheme();
+  return (
+    <button
+      className={"btn ghost theme-toggle" + (className ? " " + className : "")}
+      onClick={toggleMode}
+      aria-label="Cambiar entre modo claro y oscuro"
+      title="Cambiar entre modo claro y oscuro"
+    >
+      <span className="when-dark" aria-hidden="true">
+        ☾
+      </span>
+      <span className="when-light" aria-hidden="true">
+        ☀
+      </span>
+    </button>
+  );
+}
 
 export function Nav() {
   const [open, setOpen] = useState(false);
@@ -49,6 +73,7 @@ export function Nav() {
           <span className="coin"></span>
           <span>CRÉDITOS · 03</span>
         </div>
+        <ThemeToggle />
         {user ? (
           <button
             className="btn ghost auth-btn"
@@ -90,6 +115,7 @@ export function Nav() {
           {user ? "Cuenta" : "Iniciar Sesión"}
         </Link>
         <div style={{ flex: 1 }}></div>
+        <ThemeToggle className="theme-toggle-mobile" />
         <div
           className="pixel"
           style={{ fontSize: 9, color: "var(--ink-faint)", letterSpacing: "0.16em" }}

@@ -1,6 +1,25 @@
 // ===== engine.ts — motor de Asteroids, portado desde references/started-games/02-asteroids/game.js =====
 // Sin dependencias de React ni del DOM global (document/window). Todo el estado vive en AsteroidsEngine;
 // el input y el contexto de canvas se reciben como parámetros en cada frame.
+//
+// Colores: ni un literal. La paleta entra como dato explícito (GameSkin de lib/games/skins.ts) por el
+// constructor y se reemplaza en caliente con setSkin() — el motor no lee variables CSS ni consulta el
+// DOM. Cambiar de skin no reinicia la partida: no hay estado de juego atado a la paleta.
+//
+// Mapa de los 11 sitios de color a campos semánticos de GameSkin:
+//   bg      → fondo que pinta draw() antes de todo
+//   grid    → relleno tenue del cuerpo de los asteroides (evita que en modo claro el interior
+//             del polígono se confunda con el fondo)
+//   ramp    → contorno del asteroide, indexado por tamaño: ramp[size - 1] (tamaños 1, 2 y 3).
+//             Las 3 primeras entradas de la rampa están elegidas para no colisionar con
+//             primary/accent/danger (ver la invariante en lib/games/skins.ts).
+//   primary → nave y balas (la bala es "de la nave", comparte su color)
+//   accent  → powerup 3x: recuadro, etiqueta y contador del HUD
+//   danger  → fuego: llama del propulsor y partículas de explosión
+//   ink     → texto del HUD interno e iconos de vidas
+//   glow    → shadowBlur de nave/balas/asteroides/powerup; siempre 0 en modo claro
+
+import type { GameSkin } from "@/lib/games/skins";
 
 export type AsteroidsStatus = "playing" | "dead" | "gameover";
 // "playing"  → partida en curso
@@ -38,6 +57,17 @@ const RADII = [0, 16, 30, 50]; // por tamaño 1, 2, 3
 const SPEEDS = [0, 85, 55, 32]; // velocidad base por tamaño
 const POINTS = [0, 100, 50, 20]; // puntos por tamaño
 
+// ── Helpers de skin ───────────────────────────────────────────────────────────
+// En modo claro `glow` es 0 porque shadowBlur es invisible sobre fondo claro:
+// la legibilidad se compensa engrosando el trazo, no con brillo.
+const trazo = (skin: GameSkin, base: number) => (skin.glow === 0 ? base * 1.7 : base);
+
+// shadowColor siempre sale de la paleta, nunca de un literal.
+function aplicarGlow(ctx: CanvasRenderingContext2D, skin: GameSkin, color: string) {
+  ctx.shadowColor = color;
+  ctx.shadowBlur = skin.glow;
+}
+
 // ── Bullet ────────────────────────────────────────────────────────────────────
 class Bullet {
   x: number;
@@ -67,11 +97,15 @@ class Bullet {
     if (this.ttl <= 0) this.dead = true;
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
-    ctx.fillStyle = "#fff";
+  draw(ctx: CanvasRenderingContext2D, skin: GameSkin) {
+    ctx.save();
+    ctx.fillStyle = skin.primary;
+    aplicarGlow(ctx, skin, skin.primary);
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    // Sin glow (modo claro) la bala necesita algo más de cuerpo para leerse.
+    ctx.arc(this.x, this.y, skin.glow === 0 ? this.radius + 0.8 : this.radius, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
   }
 }
 
@@ -128,17 +162,26 @@ class Asteroid {
     ];
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, skin: GameSkin) {
+    // Tamaños 1..3 → ramp[0..2]. El módulo es defensa por si una skin futura
+    // declara una rampa más corta; con las tres actuales (7 entradas) nunca actúa.
+    const color = skin.ramp[(this.size - 1) % skin.ramp.length];
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 1.5;
-    ctx.lineJoin = "round";
     ctx.beginPath();
     ctx.moveTo(this.verts[0][0], this.verts[0][1]);
     for (let i = 1; i < this.verts.length; i++) ctx.lineTo(this.verts[i][0], this.verts[i][1]);
     ctx.closePath();
+    // Cuerpo apenas insinuado antes del contorno: sin él, en modo claro el
+    // interior del polígono se confunde con el fondo y las balas "desaparecen"
+    // al pasar por detrás de una roca.
+    ctx.fillStyle = skin.grid;
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = trazo(skin, 1.5);
+    ctx.lineJoin = "round";
+    aplicarGlow(ctx, skin, color);
     ctx.stroke();
     ctx.restore();
   }
@@ -176,22 +219,25 @@ class PowerUp {
 
   // `elapsedMs` reemplaza a `performance.now()` del original — el motor no depende de globales del DOM,
   // el tiempo transcurrido lo lleva AsteroidsEngine y se pasa explícitamente para el pulso visual.
-  draw(ctx: CanvasRenderingContext2D, elapsedMs: number) {
+  draw(ctx: CanvasRenderingContext2D, elapsedMs: number, skin: GameSkin) {
     if (this.ttl < 2 && Math.floor(this.ttl * 8) % 2 === 0) return;
     const pulse = 0.85 + Math.sin(elapsedMs / 150) * 0.15;
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(Math.PI / 4);
-    ctx.strokeStyle = "#0ff";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = skin.accent;
+    ctx.lineWidth = trazo(skin, 2);
+    aplicarGlow(ctx, skin, skin.accent);
     const r = this.radius * pulse;
     ctx.strokeRect(-r, -r, r * 2, r * 2);
     ctx.restore();
-    ctx.fillStyle = "#0ff";
+    ctx.save();
+    ctx.fillStyle = skin.accent;
     ctx.font = "bold 12px monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("3x", this.x, this.y);
+    ctx.restore();
   }
 }
 
@@ -271,7 +317,7 @@ class Ship {
     return [new Bullet(ox, oy, this.angle, this.width, this.height)];
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, skin: GameSkin) {
     if (this.dead) return;
     // Parpadeo durante invencibilidad de reaparición
     if (this.invincible > 0 && Math.floor(this.invincible * 8) % 2 === 0) return;
@@ -279,9 +325,10 @@ class Ship {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = skin.primary;
+    ctx.lineWidth = trazo(skin, 1.5);
     ctx.lineJoin = "round";
+    aplicarGlow(ctx, skin, skin.primary);
 
     // Silueta clásica: triángulo con muesca trasera
     ctx.beginPath();
@@ -298,7 +345,11 @@ class Ship {
       ctx.moveTo(-8, -4);
       ctx.lineTo(-8 - rand(6, 14), 0);
       ctx.lineTo(-8, 4);
-      ctx.strokeStyle = "rgba(255, 130, 0, 0.85)";
+      // El 0.85 de opacidad del original se aplica con globalAlpha en vez de
+      // ir embebido en un color literal: el color sale entero de la paleta.
+      ctx.globalAlpha = 0.85;
+      ctx.strokeStyle = skin.danger;
+      aplicarGlow(ctx, skin, skin.danger);
       ctx.stroke();
     }
 
@@ -334,14 +385,18 @@ class Particle {
     if (this.ttl <= 0) this.dead = true;
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
-    const alpha = this.ttl / this.life;
-    ctx.strokeStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
-    ctx.lineWidth = 1;
+  draw(ctx: CanvasRenderingContext2D, skin: GameSkin) {
+    // El desvanecido del original venía embebido en el color literal; ahora el
+    // color es de paleta y la opacidad se aplica aparte con globalAlpha.
+    ctx.save();
+    ctx.globalAlpha = this.ttl / this.life;
+    ctx.strokeStyle = skin.danger;
+    ctx.lineWidth = trazo(skin, 1);
     ctx.beginPath();
     ctx.moveTo(this.x, this.y);
     ctx.lineTo(this.x - this.vx * 0.05, this.y - this.vy * 0.05);
     ctx.stroke();
+    ctx.restore();
   }
 }
 
@@ -349,6 +404,7 @@ class Particle {
 export class AsteroidsEngine {
   private width: number;
   private height: number;
+  private skin: GameSkin;
 
   private ship!: Ship;
   private bullets: Bullet[] = [];
@@ -365,10 +421,18 @@ export class AsteroidsEngine {
   private killsSinceSpawn = 0;
   private elapsed = 0; // tiempo total transcurrido (s), reemplaza a performance.now() en PowerUp.draw
 
-  constructor(width: number, height: number) {
+  constructor(width: number, height: number, skin: GameSkin) {
     this.width = width;
     this.height = height;
+    this.skin = skin;
     this.reset();
+  }
+
+  // Cambio de paleta en caliente: solo afecta al dibujo, no toca nada del
+  // estado de la partida (posiciones, vidas, score). Por eso el reproductor
+  // puede cambiar de skin a media partida sin remontar el canvas.
+  setSkin(skin: GameSkin) {
+    this.skin = skin;
   }
 
   reset() {
@@ -513,8 +577,8 @@ export class AsteroidsEngine {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(-Math.PI / 2);
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = this.skin.ink;
+    ctx.lineWidth = trazo(this.skin, 1.2);
     ctx.lineJoin = "round";
     ctx.beginPath();
     ctx.moveTo(9, 0);
@@ -526,8 +590,13 @@ export class AsteroidsEngine {
     ctx.restore();
   }
 
+  // El HUD interno se dibuja SIN glow a propósito: el halo emborrona el texto
+  // pequeño y el contraste ya está garantizado por la paleta (ink y accent
+  // cumplen ≥ 4.5:1 contra bg en las 6 combinaciones, ver lib/games/skins.ts).
   private drawHUD(ctx: CanvasRenderingContext2D) {
-    ctx.fillStyle = "#fff";
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = this.skin.ink;
     ctx.font = "15px monospace";
 
     ctx.textAlign = "left";
@@ -540,24 +609,32 @@ export class AsteroidsEngine {
 
     if (this.ship.tripleShot > 0) {
       ctx.textAlign = "left";
-      ctx.fillStyle = "#0ff";
+      ctx.fillStyle = this.skin.accent;
       ctx.fillText(`3x  ${this.ship.tripleShot.toFixed(1)}s`, 14, 46);
     }
+    ctx.restore();
   }
 
   // Dibuja entidades + HUD de juego en vivo (SCORE/NIVEL/vidas/"3x Ns"), igual que game.js;
   // NO dibuja el overlay "GAME OVER" (ese fin de partida lo maneja el modal de la plataforma).
   draw(ctx: CanvasRenderingContext2D) {
-    ctx.fillStyle = "#000";
+    const skin = this.skin;
+    ctx.save();
+    // Estado de sombra limpio antes de nada: cada entidad se dibuja dentro de
+    // su propio save/restore, pero el contexto llega compartido desde el canvas.
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = skin.bg;
     ctx.fillRect(0, 0, this.width, this.height);
 
-    this.particles.forEach((p) => p.draw(ctx));
-    this.asteroids.forEach((a) => a.draw(ctx));
-    this.powerUps.forEach((p) => p.draw(ctx, this.elapsed * 1000));
-    this.bullets.forEach((b) => b.draw(ctx));
-    this.ship.draw(ctx);
+    this.particles.forEach((p) => p.draw(ctx, skin));
+    this.asteroids.forEach((a) => a.draw(ctx, skin));
+    this.powerUps.forEach((p) => p.draw(ctx, this.elapsed * 1000, skin));
+    this.bullets.forEach((b) => b.draw(ctx, skin));
+    this.ship.draw(ctx, skin);
 
     this.drawHUD(ctx);
+    ctx.restore();
   }
 
   getState(): AsteroidsState {

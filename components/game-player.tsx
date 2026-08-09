@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getGameEngine, GameEngineSlot } from "@/components/games/engine-registry";
+import { useTheme } from "@/components/theme-provider";
 import { useUser } from "@/components/user-provider";
 import type { Game } from "@/lib/data";
 import { getOrCreateGuestId } from "@/lib/guest-id";
+import { SKIN_IDS, SKIN_LABELS, SKINNED_GAME_SLUGS, isSkinId } from "@/lib/games/skins";
 import type { GameEngineState } from "@/lib/games/types";
 import { guardarPuntuacion, migrarPuntuacionesLocales } from "@/lib/supabase/score-actions";
 
@@ -23,6 +25,12 @@ function saveScore(entry: { game: string; score: number; name: string }) {
 
 const INITIAL_ENGINE_STATE: GameEngineState = { score: 0, lives: 3, level: 1 };
 
+// Store vacío para `useSyncExternalStore`: nunca notifica cambios, solo sirve
+// para distinguir "render de servidor" (false) de "ya hidratado" (true).
+const subscribeNunca = () => () => {};
+const snapshotCliente = () => true;
+const snapshotServidor = () => false;
+
 // Compara campo a campo antes de reemplazar el estado: onStateChange llega
 // ~60 veces por segundo, casi siempre con el mismo valor. Un objeto nuevo en
 // cada frame anularía el bail-out de re-render que React hace cuando el
@@ -39,6 +47,10 @@ function engineStateEquals(a: GameEngineState, b: GameEngineState) {
 
 export function GamePlayer({ game }: { game: Game }) {
   const { user, loading: userLoading } = useUser();
+  // Skin + modo claro/oscuro: la paleta se resuelve en la plataforma y baja
+  // al motor como prop. Cambiarla NO remonta el canvas (no entra en
+  // `resetToken`), así que cambiar de skin a media partida es gratis.
+  const { skin, skinId, setSkinId } = useTheme();
   // getGameEngine devuelve siempre la misma referencia de componente para un
   // slug dado (ver components/games/engine-registry.ts): así React
   // reconcilia el mismo tipo entre renders y nunca remonta el canvas. Se
@@ -78,6 +90,17 @@ export function GamePlayer({ game }: { game: Game }) {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // El selector de skin se monta después de hidratar: su valor sale de
+  // localStorage (av_skin), que el servidor no puede conocer, y renderizarlo
+  // en el HTML inicial provocaría un desajuste de hidratación en el <select>.
+  // useSyncExternalStore con snapshot de servidor `false` es la forma que no
+  // dispara react-hooks/set-state-in-effect (un setState dentro de un efecto
+  // sería una cascada de renders para el compilador de React).
+  // El canvas NO espera a esto — recibe la skin correcta desde el primer
+  // render de cliente, así que no hay parpadeo de paleta en el juego.
+  const hydrated = useSyncExternalStore(subscribeNunca, snapshotCliente, snapshotServidor);
+  const showSkinPicker = hydrated && isRealEngine && SKINNED_GAME_SLUGS.includes(game.id);
 
   useEffect(() => {
     if (isRealEngine) return;
@@ -205,6 +228,23 @@ export function GamePlayer({ game }: { game: Game }) {
           )}
         </div>
         <div className="hud-actions">
+          {showSkinPicker && (
+            <label className="skin-picker">
+              <span className="l">Skin</span>
+              <select
+                value={skinId}
+                onChange={(e) => {
+                  if (isSkinId(e.target.value)) setSkinId(e.target.value);
+                }}
+              >
+                {SKIN_IDS.map((id) => (
+                  <option key={id} value={id}>
+                    {SKIN_LABELS[id]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <button className="btn yellow" onClick={() => setPaused((p) => !p)}>
             {paused ? "REANUDAR" : "PAUSA"}
           </button>
@@ -225,6 +265,7 @@ export function GamePlayer({ game }: { game: Game }) {
                 key={resetToken}
                 engine={Engine}
                 paused={paused || over}
+                skin={skin}
                 onStateChange={handleStateChange}
                 onGameOver={handleGameOver}
               />

@@ -33,10 +33,16 @@ existentes están en estado `Implemented`.
   spec de `/spec-juego` y es la que se promueve a `specs/NN-<slug>.md` una vez aprobada. Vía
   paralela a `game-planner`, no lo reemplaza: úsalo cuando haya un tema de partida, no cuando la
   pregunta sea "qué juego sigue" en general.
+- **`skin-designer`** (`.claude/agents/skin-designer.md`) — aplica las tres skins (`clasico`
+  default, `neon`, `retro`, cada una con variante clara y oscura) a **un juego con motor real por
+  corrida**, el que el usuario indique explícitamente — nunca a los cuatro a la vez. A diferencia
+  de `game-planner` y `game-jam`, sí escribe código: audita el motor pedido, completa
+  `lib/games/skins.ts` y su `engine.ts`/`<slug>-canvas.tsx`, y registra el avance en
+  `references/game-with-themes.md`. Opera sobre motores ya implementados, no diseña specs.
 
-Flujo completo para un juego nuevo: `game-planner` → `/spec-juego` → `/spec-impl`.
+Flujo completo para un juego nuevo: `game-planner` → `/spec-juego` → `/spec-impl` → `skin-designer`.
 Flujo temático (game jam): `game-jam <tema>` → revisar `specs/game-jam/<slug>/` → promover
-`02-motor.md` a `specs/NN-<slug>.md` → `/spec-impl`.
+`02-motor.md` a `specs/NN-<slug>.md` → `/spec-impl` → `skin-designer`.
 
 Skills instaladas en `.claude/skills/` y `.agents/skills/`:
 
@@ -245,7 +251,8 @@ hace =====`** que explica _por qué_ está partido así. Si tocas uno de esos ar
   actualizado ese comentario — son la memoria de las restricciones de Next.js que motivaron cada
   separación.
 - `references/` es material de origen de solo lectura: no lo edites, no lo importes desde la app, y
-  está fuera de ESLint y del hook de formato. Única excepción: `game-suggetions-todo.md`, que
-  `game-planner` sí actualiza — es su memoria persistente, no material de origen.
+  está fuera de ESLint y del hook de formato. Excepciones: `game-suggetions-todo.md`, que
+  `game-planner` sí actualiza, y `game-with-themes.md`, que `skin-designer` sí actualiza — son su
+  memoria persistente, no material de origen.
 - Variables de entorno en `.env.example`: `RESEND_API_KEY`, `RESEND_TO_EMAIL`,
   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
